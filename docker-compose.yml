@@ -1,0 +1,9 @@
+# This docker-compose script builds our program from scratch, and also
+# runs the requisite redis image.
+version: "3.5"
+
+services:
+  ipverify:
+    build: .
+    ports:
+      - '8080'
