@@ -35,6 +35,7 @@ type Service interface {
 
 type VerifyService struct {
 	mmReader *maxminddb.Reader
+	store    Store
 	log      *zap.SugaredLogger
 }
 
@@ -43,7 +44,11 @@ func New(log *zap.SugaredLogger) (*VerifyService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &VerifyService{mmReader: mmReader, log: log}, nil
+	store, err := NewSQLiteStore("requests.db", log)
+	if err != nil {
+		return nil, err
+	}
+	return &VerifyService{mmReader: mmReader, store: store, log: log}, nil
 }
 
 func (vs *VerifyService) VerifyIP(types.VerifyRequest) (types.VerifyResponse, error) {
@@ -54,6 +59,14 @@ func (vs *VerifyService) Shutdown() {
 	if err := vs.mmReader.Close(); err != nil {
 		vs.log.Warnw("Maxmind shutdown", "error", err)
 	}
+	vs.store.Shutdown()
+}
+
+func speed(lon1, lat1 float64, time1 int64, lon2, lat2 float64, time2 int64) int64 {
+	dist := haversine(lon1, lat1, lon2, lat2)
+	fmt.Printf("distance: %f\n", dist)
+	t := math.Abs(float64(time2 - time1))
+	return int64(math.Round((dist / t) * 3600))
 }
 
 // Source: // https://play.golang.org/p/MZVh5bRWqN - bsaic code similar to these
@@ -69,7 +82,7 @@ func haversine(lonFrom float64, latFrom float64, lonTo float64, latTo float64) f
 			math.Sin(deltaLon/2)*math.Sin(deltaLon/2)
 	var c = 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
-	return earthRadius * c
+	return kmtomiles * (earthRadius * c)
 }
 
 // Do a MaxMind lookup.

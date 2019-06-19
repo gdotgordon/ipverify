@@ -16,7 +16,6 @@ import (
 	"github.com/gdotgordon/ipverify/api"
 	"github.com/gdotgordon/ipverify/service"
 	"github.com/gorilla/mux"
-	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 )
 
