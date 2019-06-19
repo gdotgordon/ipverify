@@ -1,7 +1,11 @@
+# github.com/google/uuid v1.1.1
+github.com/google/uuid
 # github.com/gorilla/mux v1.7.2
 github.com/gorilla/mux
 # github.com/mattn/go-sqlite3 v1.10.0
 github.com/mattn/go-sqlite3
+# github.com/oschwald/maxminddb-golang v1.3.1
+github.com/oschwald/maxminddb-golang
 # go.uber.org/atomic v1.4.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.1.0
@@ -13,3 +17,6 @@ go.uber.org/zap/zapcore
 go.uber.org/zap/buffer
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
+# golang.org/x/sys v0.0.0-20190618155005-516e3c20635f
+golang.org/x/sys/unix
+golang.org/x/sys/windows

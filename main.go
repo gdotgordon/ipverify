@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gdotgordon/ipverify/api"
+	"github.com/gdotgordon/ipverify/service"
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
@@ -22,6 +23,8 @@ import (
 const (
 	seedFile = "seed.json"
 )
+
+type cleanupTask func()
 
 var (
 	portNum  int    // listen port
@@ -56,8 +59,14 @@ func main() {
 	// set up the routes, as we don't need to know the details in the
 	// main program.
 	muxer := mux.NewRouter()
-	//service := service.New(store.New(), log)
-	if err := api.Init(ctx, muxer, log); err != nil {
+
+	service, err := service.New(log)
+	if err != nil {
+		log.Errorw("Error initializing service", "error", err)
+		os.Exit(1)
+	}
+
+	if err := api.Init(ctx, muxer, service, log); err != nil {
 		log.Errorf("Error initializing API layer", "error", err)
 		os.Exit(1)
 	}
@@ -78,7 +87,7 @@ func main() {
 	}()
 
 	// Block until we shutdown.
-	waitForShutdown(ctx, srv, log)
+	waitForShutdown(ctx, srv, log, service.Shutdown)
 }
 
 // set up the logger, condsidering any env vars.
@@ -104,13 +113,16 @@ func initLogging() (*zap.SugaredLogger, error) {
 
 // Setup for clean shutdown with signal handlers/cancel.
 func waitForShutdown(ctx context.Context, srv *http.Server,
-	log *zap.SugaredLogger) {
+	log *zap.SugaredLogger, tasks ...cleanupTask) {
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	// Block until we receive our signal.
 	sig := <-interruptChan
 	log.Debugw("Termination signal received", "signal", sig)
+	for _, t := range tasks {
+		t()
+	}
 
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
