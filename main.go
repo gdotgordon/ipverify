@@ -59,7 +59,12 @@ func main() {
 	// main program.
 	muxer := mux.NewRouter()
 
-	service, err := service.New(log)
+	store, err := service.NewSQLiteStore("requests.db", log)
+	if err != nil {
+		log.Errorw("Error initializing service", "error", err)
+		os.Exit(1)
+	}
+	service, err := service.New(store, log)
 	if err != nil {
 		log.Errorw("Error initializing service", "error", err)
 		os.Exit(1)

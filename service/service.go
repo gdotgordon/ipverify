@@ -30,31 +30,81 @@ type Location struct {
 
 // Service defines the sets of functions handled by IP verify service
 type Service interface {
-	VerifyIP(types.VerifyRequest) (types.VerifyResponse, error)
+	VerifyIP(types.VerifyRequest) (*types.VerifyResponse, error)
 }
 
+// VerifyService is the implementation of Service that performs verification
+// that a given login attempt is not suspicious, based on the speed criterion.
+// It does geolcation lookups of IP address use the Maxmind database and checks
+// the incoming request against previously recoerded events in the database,
+// and determines whether the request is suspicious.
 type VerifyService struct {
 	mmReader *maxminddb.Reader
 	store    Store
 	log      *zap.SugaredLogger
 }
 
-func New(log *zap.SugaredLogger) (*VerifyService, error) {
+// New creates a new VerifyService, configured with a datastore and logger.
+func New(store Store, log *zap.SugaredLogger) (*VerifyService, error) {
 	mmReader, err := maxminddb.Open("./mmdb/GeoLite2-City.mmdb")
-	if err != nil {
-		return nil, err
-	}
-	store, err := NewSQLiteStore("requests.db", log)
 	if err != nil {
 		return nil, err
 	}
 	return &VerifyService{mmReader: mmReader, store: store, log: log}, nil
 }
 
-func (vs *VerifyService) VerifyIP(types.VerifyRequest) (types.VerifyResponse, error) {
-	return types.VerifyResponse{}, nil
+// VerifyIP is the main call to check for suspicious activity, given the current
+// incoming login.
+func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyResponse, error) {
+
+	// A GeoEvent is the data for the previous and next requests relative
+	// to the incoming request.  Both may or may bot be present.
+	var resp types.VerifyResponse
+	var pge, nge *types.GeoEvent
+
+	// First get the prior and next items (if they exist) from the store.
+	prev, nxt, err := vs.store.GetPriorNext(req.Username, req.UnixTimestamp)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the coordinates and radius for the incoming request.
+	curLoc, err := lookupIP(req.IPAddress, vs.mmReader)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fill in the part of the response object for the current request.
+	resp.CurrentGeo.Lat = curLoc.Latitude
+	resp.CurrentGeo.Lon = curLoc.Longitude
+	resp.CurrentGeo.Radius = curLoc.AccuracyRadius
+
+	// Compute the speeds and preapre the response section for the previous
+	// and next items (if any).
+	if prev != nil {
+		pge, err = vs.geoEventFromRequest(curLoc, &req, prev)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if nxt != nil {
+		nge, err = vs.geoEventFromRequest(curLoc, &req, nxt)
+		if err != nil {
+			return nil, err
+		}
+	}
+	resp.PrecedingIPAccess = pge
+	resp.SubsequentIPAccess = nge
+
+	// TODO see if we can make this first.
+	// Finally store the new request.
+	if err = vs.store.AddRecord(req); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
+// Shutdown does cleanup tasks.
 func (vs *VerifyService) Shutdown() {
 	if err := vs.mmReader.Close(); err != nil {
 		vs.log.Warnw("Maxmind shutdown", "error", err)
@@ -62,8 +112,35 @@ func (vs *VerifyService) Shutdown() {
 	vs.store.Shutdown()
 }
 
-func speed(lon1, lat1 float64, time1 int64, lon2, lat2 float64, time2 int64) int64 {
-	dist := haversine(lon1, lat1, lon2, lat2)
+// geoEventFromRequest prepares either the "previous" and "subsequent" part
+// of the repsonse item, given the data.  This is mostly to refactor common
+// code.
+func (vs *VerifyService) geoEventFromRequest(curLoc Location,
+	curEvent, otherEvent *types.VerifyRequest) (*types.GeoEvent, error) {
+
+	otherLoc, err := lookupIP(otherEvent.IPAddress, vs.mmReader)
+	if err != nil {
+		return nil, err
+	}
+	speed := calculateSpeed(otherLoc.Latitude, otherLoc.Longitude, otherEvent.UnixTimestamp,
+		curLoc.Latitude, curLoc.Longitude, curEvent.UnixTimestamp)
+	pge := &types.GeoEvent{
+		Speed:      speed,
+		Suspicious: speed > types.MaxSpeed,
+		IP:         otherEvent.IPAddress,
+		Lat:        otherLoc.Latitude,
+		Lon:        otherLoc.Longitude,
+		Radius:     otherLoc.AccuracyRadius,
+		Timestamp:  otherEvent.UnixTimestamp,
+	}
+	return pge, nil
+}
+
+// calculate speed uses the two sets of coorinates and corresponding timestamps
+// to calculte a rate that is rounded to the nearest integer (as per the sample
+// in the assignment).
+func calculateSpeed(lat1, lon1 float64, time1 int64, lat2, lon2 float64, time2 int64) int64 {
+	dist := haversine(lat1, lon1, lat2, lon2)
 	fmt.Printf("distance: %f\n", dist)
 	t := math.Abs(float64(time2 - time1))
 	return int64(math.Round((dist / t) * 3600))
@@ -73,7 +150,7 @@ func speed(lon1, lat1 float64, time1 int64, lon2, lat2 float64, time2 int64) int
 // packages, but conversion to miles is more precise:
 // "github.com/paultag/go-haversine"
 // "github.com/umahmood/haversine"
-func haversine(lonFrom float64, latFrom float64, lonTo float64, latTo float64) float64 {
+func haversine(latFrom, lonFrom, latTo, lonTo float64) float64 {
 	var deltaLat = (latTo - latFrom) * (math.Pi / 180)
 	var deltaLon = (lonTo - lonFrom) * (math.Pi / 180)
 
@@ -85,7 +162,7 @@ func haversine(lonFrom float64, latFrom float64, lonTo float64, latTo float64) f
 	return kmtomiles * (earthRadius * c)
 }
 
-// Do a MaxMind lookup.
+// lookupIP does a MaxMind lookup, using the more efficient lower-level API.
 func lookupIP(ip string, db *maxminddb.Reader) (Location, error) {
 	// Syntactic weirdness due to using recommended low-level API, which
 	// requires a struct tag.

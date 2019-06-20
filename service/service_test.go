@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/gdotgordon/ipverify/types"
+	"github.com/google/uuid"
 	"github.com/oschwald/maxminddb-golang"
 	"go.uber.org/zap"
 )
@@ -20,8 +22,17 @@ func TestMaxMind(t *testing.T) {
 }
 
 func TestSpeed(t *testing.T) {
-	fmt.Println(speed(-71.408, 41.8244, 1514851200, -80.1029, 26.3796, 1514858400))
-	fmt.Println(speed(-1.15, 51.45, 1514851200, 7.42, 45.04, 1514858400))
+	fmt.Println(calculateSpeed(41.8244, -71.408, 1514851200, 26.3796, -80.1029, 1514858400))
+	fmt.Println(calculateSpeed(51.45, -1.15, 1514851200, 45.04, 7.42, 1514858400))
+}
+
+func makeRecord(un string, ts int64, ip string) types.VerifyRequest {
+	return types.VerifyRequest{
+		Username:      un,
+		UnixTimestamp: ts,
+		EventUUID:     uuid.New().String(),
+		IPAddress:     ip,
+	}
 }
 
 func newTestLogger(t *testing.T) *zap.SugaredLogger {

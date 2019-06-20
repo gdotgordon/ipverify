@@ -51,9 +51,11 @@ func (ms *MockService) VerifyIP(req types.VerifyRequest) (types.VerifyResponse, 
 		return types.VerifyResponse{}, errors.New("Vernon error")
 	case "PredSucc":
 		return types.VerifyResponse{
-			Lat:               0.1,
-			Lon:               0.2,
-			Radius:            1,
+			CurrentGeo: types.CurrentGeoStat{
+				Lat:    0.1,
+				Lon:    0.2,
+				Radius: 1,
+			},
 			PrecedingIPAccess: &types.GeoEvent{},
 		}, nil
 	}

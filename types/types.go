@@ -4,6 +4,10 @@
 // REST requests and respones.
 package types
 
+const (
+	MaxSpeed = 500
+)
+
 // StatusResponse is the JSON returned for a liveness check as well as
 // for other status notifications such as a successful delete.
 type StatusResponse struct {
@@ -19,16 +23,22 @@ type VerifyRequest struct {
 	IPAddress     string `json:"ip_address"`
 }
 
+type CurrentGeoStat struct {
+	Lat    float64 `json:"lat"`
+	Lon    float64 `json:"lon"`
+	Radius uint16  `json:"radius"`
+}
+
 // GeoEvent is used in the Verify response, as either the preceding
 // or subsequent location.  It also indicates the "speed", and whether
 // it is considered suspicious
 type GeoEvent struct {
 	IP         string  `json:"ip"`
-	Speed      int     `json:"speed"`
+	Speed      int64   `json:"speed"`
 	Suspicious bool    `json:"suspicious"`
 	Lat        float64 `json:"lat"`
 	Lon        float64 `json:"lon"`
-	Radius     int     `json:"radius"`
+	Radius     uint16  `json:"radius"`
 	Timestamp  int64   `json:"timestamp"`
 }
 
@@ -36,9 +46,7 @@ type GeoEvent struct {
 // the preceding subsequent access items are pointers, so they may be omitted
 // from the JSON if not p[resent.]
 type VerifyResponse struct {
-	Lat                float64   `json:"lat"`
-	Lon                float64   `json:"lon"`
-	Radius             int       `json:"radius"`
-	PrecedingIPAccess  *GeoEvent `json:"precedingIpAccess,omitempty"`
-	SubsequentIPAccess *GeoEvent `json:"subsequentIpAccess,omitempty"`
+	CurrentGeo         CurrentGeoStat `json:"currentGeo"`
+	PrecedingIPAccess  *GeoEvent      `json:"precedingIpAccess,omitempty"`
+	SubsequentIPAccess *GeoEvent      `json:"subsequentIpAccess,omitempty"`
 }
