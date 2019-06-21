@@ -26,6 +26,58 @@ func TestSpeed(t *testing.T) {
 	fmt.Println(calculateSpeed(51.45, -1.15, 1514851200, 45.04, 7.42, 1514858400))
 }
 
+func TestVerify(t *testing.T) {
+	l := newTestLogger(t)
+	store, err := NewSQLiteStore(":memory:", l)
+	if err != nil {
+		t.Errorf("error creating store: %v", err)
+	}
+	srv, err := New("../mmdb/GeoLite2-City.mmdb", store, l)
+	if err != nil {
+		t.Errorf("error creating service: %v", err)
+	}
+	rec2 := types.VerifyRequest{
+		Username:      "bob",
+		UnixTimestamp: 1514859999,
+		EventUUID:     "85ad929a-db03-4bf4-9541-8f728fa12e42",
+		IPAddress:     "128.148.252.151",
+	}
+	rec1 := types.VerifyRequest{
+		Username:      "bob",
+		UnixTimestamp: 1514850000,
+		EventUUID:     "55ad929a-db03-4bf4-9541-8f728fa12e42",
+		IPAddress:     "131.91.101.181",
+	}
+	rec3 := types.VerifyRequest{
+		Username:      "bob",
+		UnixTimestamp: 1514866666,
+		EventUUID:     "65ad929a-db03-4bf4-9541-8f728fa12e42",
+		IPAddress:     "131.91.101.181",
+	}
+	rec4 := types.VerifyRequest{
+		Username:      "bob",
+		UnixTimestamp: 1514866667,
+		EventUUID:     "25ad929a-db03-4bf4-9541-8f728fa12e42",
+		IPAddress:     "128.148.252.151",
+	}
+	rec5 := types.VerifyRequest{
+		Username:      "bob",
+		UnixTimestamp: 1514850300,
+		EventUUID:     "35ad929a-db03-4bf4-9541-8f728fa12e42",
+		IPAddress:     "131.91.101.181",
+	}
+	res, err := srv.VerifyIP(rec1)
+	fmt.Println("res:", res, "err:", err)
+	res, err = srv.VerifyIP(rec2)
+	fmt.Printf("res: %+v, err: %v\n", res, err)
+	res, err = srv.VerifyIP(rec3)
+	fmt.Printf("res: %+v, err: %v\n", res, err)
+	res, err = srv.VerifyIP(rec4)
+	fmt.Printf("res: %+v, err: %v\n", res, err)
+	res, err = srv.VerifyIP(rec5)
+	fmt.Printf("res: %+v, err: %v\n", res, err)
+}
+
 func makeRecord(un string, ts int64, ip string) types.VerifyRequest {
 	return types.VerifyRequest{
 		Username:      un,

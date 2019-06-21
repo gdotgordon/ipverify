@@ -64,7 +64,7 @@ func main() {
 		log.Errorw("Error initializing service", "error", err)
 		os.Exit(1)
 	}
-	service, err := service.New(store, log)
+	service, err := service.New("./mmdb/GeoLite2-City.mmdb", store, log)
 	if err != nil {
 		log.Errorw("Error initializing service", "error", err)
 		os.Exit(1)

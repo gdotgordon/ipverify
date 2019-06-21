@@ -9,8 +9,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/gdotgordon/ipverify/service"
 	"github.com/gdotgordon/ipverify/types"
@@ -91,20 +93,24 @@ func (a apiImpl) verify(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := validateVerifyRequest(request); err != nil {
 		a.writeErrorResponse(w, http.StatusBadRequest, err)
+		return
 	}
 
 	response, err := a.service.VerifyIP(request)
 	if err != nil {
 		a.writeErrorResponse(w, http.StatusBadRequest, err)
+		return
 	}
 
 	b, err := json.MarshalIndent(response, "", "  ")
 	if err != nil {
 		a.writeErrorResponse(w, http.StatusInternalServerError, err)
+		return
 	}
 	_, err = w.Write(b)
 	if err != nil {
 		a.writeErrorResponse(w, http.StatusInternalServerError, err)
+		return
 	}
 }
 
@@ -112,14 +118,14 @@ func validateVerifyRequest(request types.VerifyRequest) error {
 	if request.Username == "" {
 		return errors.New("missing username")
 	}
-	if request.UnixTimestamp == 0 {
-		return errors.New("zero timestamp")
+	if request.UnixTimestamp <= 0 || request.UnixTimestamp > time.Now().Unix() {
+		return fmt.Errorf("invalid timestamp: %d", request.UnixTimestamp)
 	}
 	if _, err := uuid.Parse(request.EventUUID); err != nil {
 		return err
 	}
 	if net.ParseIP(request.IPAddress) == nil {
-		return errors.New("invalid IP address")
+		return fmt.Errorf("invalid IP address: %s", request.IPAddress)
 	}
 	return nil
 }

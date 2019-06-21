@@ -45,8 +45,8 @@ type VerifyService struct {
 }
 
 // New creates a new VerifyService, configured with a datastore and logger.
-func New(store Store, log *zap.SugaredLogger) (*VerifyService, error) {
-	mmReader, err := maxminddb.Open("./mmdb/GeoLite2-City.mmdb")
+func New(mmDBPath string, store Store, log *zap.SugaredLogger) (*VerifyService, error) {
+	mmReader, err := maxminddb.Open(mmDBPath)
 	if err != nil {
 		return nil, err
 	}
@@ -122,11 +122,18 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 	if err != nil {
 		return nil, err
 	}
-	speed := calculateSpeed(otherLoc.Latitude, otherLoc.Longitude, otherEvent.UnixTimestamp,
-		curLoc.Latitude, curLoc.Longitude, curEvent.UnixTimestamp)
+
+	speed := calculateSpeed(otherLoc.Latitude, otherLoc.Longitude,
+		otherEvent.UnixTimestamp, curLoc.Latitude, curLoc.Longitude,
+		curEvent.UnixTimestamp)
+
+	var suspicious bool
+	if speed == -1 || speed > types.MaxSpeed {
+		suspicious = true
+	}
 	pge := &types.GeoEvent{
 		Speed:      speed,
-		Suspicious: speed > types.MaxSpeed,
+		Suspicious: suspicious,
 		IP:         otherEvent.IPAddress,
 		Lat:        otherLoc.Latitude,
 		Lon:        otherLoc.Longitude,
@@ -141,8 +148,15 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 // in the assignment).
 func calculateSpeed(lat1, lon1 float64, time1 int64, lat2, lon2 float64, time2 int64) int64 {
 	dist := haversine(lat1, lon1, lat2, lon2)
-	fmt.Printf("distance: %f\n", dist)
+
+	// We don't want to divide by 0, so we use -1 as an indicator for this.
+	if time1 == time2 {
+		return -1
+	}
 	t := math.Abs(float64(time2 - time1))
+
+	fmt.Println(time1, time2)
+	fmt.Printf("time: %f, distance %f\n", t, dist)
 	return int64(math.Round((dist / t) * 3600))
 }
 

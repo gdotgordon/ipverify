@@ -4,6 +4,10 @@
 // REST requests and respones.
 package types
 
+import (
+	"encoding/json"
+)
+
 const (
 	MaxSpeed = 500
 )
@@ -49,4 +53,9 @@ type VerifyResponse struct {
 	CurrentGeo         CurrentGeoStat `json:"currentGeo"`
 	PrecedingIPAccess  *GeoEvent      `json:"precedingIpAccess,omitempty"`
 	SubsequentIPAccess *GeoEvent      `json:"subsequentIpAccess,omitempty"`
+}
+
+func (v VerifyResponse) String() string {
+	b, _ := json.MarshalIndent(v, "", "  ")
+	return string(b)
 }

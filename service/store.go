@@ -66,11 +66,12 @@ func (sqs *SQLiteStore) AddRecord(item types.VerifyRequest) error {
 	sqs.mu.Lock()
 	defer sqs.mu.Unlock()
 
+	sqs.log.Debugw("adding db row", "item", item)
 	_, err := sqs.addStmt.Exec(item.EventUUID, item.Username, item.IPAddress, item.UnixTimestamp)
 	if err != nil {
+		sqs.log.Errorw("adding db row failed", "error", err)
 		return err
 	}
-	sqs.log.Debugw("added db row", "item", item)
 	return nil
 }
 
@@ -119,7 +120,7 @@ func (sqs *SQLiteStore) GetPriorNext(username string,
 	// earliest of those.
 	for _, v := range []string{`
         SELECT Uuid, Username, Ipaddr, Unix FROM items
-        WHERE Username = ? AND Unix < ?
+        WHERE Username = ? AND Unix <= ?
 		ORDER BY Unix DESC LIMIT 1`,
 		`SELECT Uuid, Username, Ipaddr, Unix FROM items
         WHERE Username = ? AND Unix > ?
