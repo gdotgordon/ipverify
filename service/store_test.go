@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gdotgordon/ipverify/types"
+	"github.com/google/uuid"
 )
 
 func TestStore(t *testing.T) {
@@ -35,7 +36,7 @@ func TestStore(t *testing.T) {
 	}
 	fmt.Println("items: ", items)
 
-	prev, nxt, err := store.GetPriorNext("robby", 1514851233)
+	prev, nxt, err := store.GetPriorNext("robby", uuid.New().String(), 1514851233)
 	if err != nil {
 		t.Errorf("getting rows: %v", err)
 	}

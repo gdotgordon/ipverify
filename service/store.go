@@ -26,7 +26,7 @@ const sqlAdditem = `
 type Store interface {
 	AddRecord(types.VerifyRequest) error
 	GetAllRowsForUser(username string) ([]types.VerifyRequest, error)
-	GetPriorNext(username string, timestamp int64) (*types.VerifyRequest, *types.VerifyRequest, error)
+	GetPriorNext(username string, uuid string, timestamp int64) (*types.VerifyRequest, *types.VerifyRequest, error)
 	Shutdown()
 }
 
@@ -108,7 +108,7 @@ func (sqs *SQLiteStore) GetAllRowsForUser(username string) ([]types.VerifyReques
 // subsequent to it.  As documented, we consider the presumably rare case
 // of two logins for the same user at exactly the same Unix time as a
 // suspicious login, and capture it along with the prior events.
-func (sqs *SQLiteStore) GetPriorNext(username string,
+func (sqs *SQLiteStore) GetPriorNext(username string, uuid string,
 	timestamp int64) (*types.VerifyRequest, *types.VerifyRequest, error) {
 	var prev, next *types.VerifyRequest
 
@@ -120,13 +120,13 @@ func (sqs *SQLiteStore) GetPriorNext(username string,
 	// earliest of those.
 	for _, v := range []string{`
         SELECT Uuid, Username, Ipaddr, Unix FROM items
-        WHERE Username = ? AND Unix <= ?
+        WHERE Username = ? AND Uuid != ? AND Unix <= ?
 		ORDER BY Unix DESC LIMIT 1`,
 		`SELECT Uuid, Username, Ipaddr, Unix FROM items
-        WHERE Username = ? AND Unix > ?
+        WHERE Username = ? AND Uuid != ? AND Unix > ?
 		ORDER BY Unix ASC LIMIT 1`,
 	} {
-		rows, err := sqs.db.Query(v, username, timestamp)
+		rows, err := sqs.db.Query(v, username, uuid, timestamp)
 		if err != nil {
 			return nil, nil, err
 		}

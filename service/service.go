@@ -57,13 +57,17 @@ func New(mmDBPath string, store Store, log *zap.SugaredLogger) (*VerifyService, 
 // incoming login.
 func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyResponse, error) {
 
+	if err := vs.store.AddRecord(req); err != nil {
+		return nil, err
+	}
+
 	// A GeoEvent is the data for the previous and next requests relative
 	// to the incoming request.  Both may or may bot be present.
 	var resp types.VerifyResponse
 	var pge, nge *types.GeoEvent
 
 	// First get the prior and next items (if they exist) from the store.
-	prev, nxt, err := vs.store.GetPriorNext(req.Username, req.UnixTimestamp)
+	prev, nxt, err := vs.store.GetPriorNext(req.Username, req.EventUUID, req.UnixTimestamp)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +102,9 @@ func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyRespons
 
 	// TODO see if we can make this first.
 	// Finally store the new request.
-	if err = vs.store.AddRecord(req); err != nil {
-		return nil, err
-	}
+	//if err = vs.store.AddRecord(req); err != nil {
+	//	return nil, err
+	//}
 	return &resp, nil
 }
 
