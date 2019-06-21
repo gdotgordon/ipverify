@@ -1,4 +1,4 @@
-// Package main runs the produce microservice.  It spins up an http
+// Package main runs the IP verify microservice.  It spins up an http
 // server to handle requests, which are handled by the api package.
 package main
 
@@ -54,7 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create the server to handle the produce service.  The API module will
+	// Create the server to handle the IP verify service.  The API module will
 	// set up the routes, as we don't need to know the details in the
 	// main program.
 	muxer := mux.NewRouter()

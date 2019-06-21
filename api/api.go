@@ -1,4 +1,4 @@
-// Package api is the endpoint implementation for the produce service.
+// Package api is the endpoint implementation for the IP verify service.
 // The HTTP endpoint implmentations are here.  This package deals with
 // unmarshaling and marshaling payloads, dispatching to the service (which is
 // itself contains an instance of the store), processing those errors,
