@@ -31,6 +31,7 @@ type Location struct {
 // Service defines the sets of functions handled by IP verify service
 type Service interface {
 	VerifyIP(types.VerifyRequest) (*types.VerifyResponse, error)
+	ResetStore() error
 }
 
 // VerifyService is the implementation of Service that performs verification
@@ -57,6 +58,8 @@ func New(mmDBPath string, store Store, log *zap.SugaredLogger) (*VerifyService, 
 // incoming login.
 func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyResponse, error) {
 
+	// First add the current record to the store.  This will reduce the vulnerability
+	// of two nearly simutaneous requests missing each other's new event.
 	if err := vs.store.AddRecord(req); err != nil {
 		return nil, err
 	}
@@ -99,13 +102,12 @@ func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyRespons
 	}
 	resp.PrecedingIPAccess = pge
 	resp.SubsequentIPAccess = nge
-
-	// TODO see if we can make this first.
-	// Finally store the new request.
-	//if err = vs.store.AddRecord(req); err != nil {
-	//	return nil, err
-	//}
 	return &resp, nil
+}
+
+// ResetStore clears the database.
+func (vs *VerifyService) ResetStore() error {
+	return vs.store.Clear()
 }
 
 // Shutdown does cleanup tasks.
@@ -135,7 +137,7 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 	if speed == -1 || speed > types.MaxSpeed {
 		suspicious = true
 	}
-	pge := &types.GeoEvent{
+	ge := &types.GeoEvent{
 		Speed:      speed,
 		Suspicious: suspicious,
 		IP:         otherEvent.IPAddress,
@@ -144,7 +146,7 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 		Radius:     otherLoc.AccuracyRadius,
 		Timestamp:  otherEvent.UnixTimestamp,
 	}
-	return pge, nil
+	return ge, nil
 }
 
 // calculate speed uses the two sets of coorinates and corresponding timestamps
@@ -152,15 +154,14 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 // in the assignment).
 func calculateSpeed(lat1, lon1 float64, time1 int64, lat2, lon2 float64, time2 int64) int64 {
 	dist := haversine(lat1, lon1, lat2, lon2)
+	fmt.Println("******Haverisne", dist)
 
 	// We don't want to divide by 0, so we use -1 as an indicator for this.
 	if time1 == time2 {
 		return -1
 	}
 	t := math.Abs(float64(time2 - time1))
-
-	fmt.Println(time1, time2)
-	fmt.Printf("time: %f, distance %f\n", t, dist)
+	fmt.Printf("time: %f, distance %f, %f\n", t, dist, (dist/t)*3600)
 	return int64(math.Round((dist / t) * 3600))
 }
 

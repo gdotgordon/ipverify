@@ -30,7 +30,7 @@ func TestStore(t *testing.T) {
 		}
 	}
 
-	items, err := store.GetAllRowsForUser("robby")
+	items, err := store.GetAllRows()
 	if err != nil {
 		t.Errorf("getting rows: %v", err)
 	}

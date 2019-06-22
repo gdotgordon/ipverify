@@ -25,8 +25,9 @@ const sqlAdditem = `
 // them for checks for suspicious activity.
 type Store interface {
 	AddRecord(types.VerifyRequest) error
-	GetAllRowsForUser(username string) ([]types.VerifyRequest, error)
+	GetAllRows() ([]types.VerifyRequest, error)
 	GetPriorNext(username string, uuid string, timestamp int64) (*types.VerifyRequest, *types.VerifyRequest, error)
+	Clear() error
 	Shutdown()
 }
 
@@ -75,17 +76,16 @@ func (sqs *SQLiteStore) AddRecord(item types.VerifyRequest) error {
 	return nil
 }
 
-// GetAllRowsForUser gets all rows that match the specified username.
-func (sqs *SQLiteStore) GetAllRowsForUser(username string) ([]types.VerifyRequest, error) {
+// GetAllRows gets all rows in the store.
+func (sqs *SQLiteStore) GetAllRows() ([]types.VerifyRequest, error) {
 	sqlReadall := `
 		SELECT Uuid, Username, Ipaddr, Unix FROM items
-		WHERE Username = ?
-        ORDER BY Unix DESC
+        ORDER BY Unix ASC
         `
 	sqs.mu.RLock()
 	defer sqs.mu.RUnlock()
 
-	rows, err := sqs.db.Query(sqlReadall, username)
+	rows, err := sqs.db.Query(sqlReadall)
 	if err != nil {
 		return nil, err
 	}
@@ -146,6 +146,12 @@ func (sqs *SQLiteStore) GetPriorNext(username string, uuid string,
 		}
 	}
 	return prev, next, nil
+}
+
+// Clear deletes all the rows forom the table - useful for testing.
+func (sqs *SQLiteStore) Clear() error {
+	_, err := sqs.db.Exec("DELETE FROM items;")
+	return err
 }
 
 // Shutdown does cleanup on termination

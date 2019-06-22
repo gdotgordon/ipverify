@@ -254,3 +254,7 @@ func (ms *MockService) VerifyIP(req types.VerifyRequest) (*types.VerifyResponse,
 		return nil, nil
 	}
 }
+
+func (ms *MockService) ResetStore() error {
+	return nil
+}

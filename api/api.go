@@ -41,7 +41,7 @@ func Init(ctx context.Context, r *mux.Router, service service.Service, log *zap.
 	ap := apiImpl{service: service, log: log}
 	r.HandleFunc(statusURL, ap.getStatus).Methods(http.MethodGet)
 	r.HandleFunc(verifyURL, ap.verify).Methods(http.MethodPost)
-	//r.HandleFunc(resetURL, ap.handleReset).Methods(http.MethodPost)
+	r.HandleFunc(resetURL, ap.reset).Methods(http.MethodGet)
 
 	var wrapContext = func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +111,12 @@ func (a apiImpl) verify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		a.writeErrorResponse(w, http.StatusInternalServerError, err)
 		return
+	}
+}
+
+func (a *apiImpl) reset(w http.ResponseWriter, r *http.Request) {
+	if err := a.service.ResetStore(); err != nil {
+		a.writeErrorResponse(w, http.StatusInternalServerError, err)
 	}
 }
 
