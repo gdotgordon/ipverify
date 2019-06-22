@@ -18,14 +18,15 @@ import (
 	"github.com/gdotgordon/ipverify/types"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	pkgerr "github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
-// Definitions for the supported URLs.
+// Definitions for the supported URL endpoints.
 const (
-	statusURL = "/v1/status"
-	verifyURL = "/v1/verify"
-	resetURL  = "/v1/reset"
+	statusURL = "/v1/status" // ping
+	verifyURL = "/v1/verify" // call to check for suspicious behavior
+	resetURL  = "/v1/reset"  // clears the DB, mostly used for testing.
 )
 
 // API is the item that dispatches to the endpoint implementations
@@ -40,7 +41,7 @@ type apiImpl struct {
 func Init(ctx context.Context, r *mux.Router, service service.Service, log *zap.SugaredLogger) error {
 	ap := apiImpl{service: service, log: log}
 	r.HandleFunc(statusURL, ap.getStatus).Methods(http.MethodGet)
-	r.HandleFunc(verifyURL, ap.verify).Methods(http.MethodPost)
+	r.HandleFunc(verifyURL, ap.verifyIP).Methods(http.MethodPost)
 	r.HandleFunc(resetURL, ap.reset).Methods(http.MethodGet)
 
 	var wrapContext = func(next http.Handler) http.Handler {
@@ -78,8 +79,8 @@ func (a apiImpl) getStatus(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-// Verify a potential suspicious IP address
-func (a apiImpl) verify(w http.ResponseWriter, r *http.Request) {
+// Verify a potentially suspicious IP address
+func (a apiImpl) verifyIP(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.writeErrorResponse(w, http.StatusBadRequest, errors.New("No body for POST"))
 		return
@@ -89,10 +90,13 @@ func (a apiImpl) verify(w http.ResponseWriter, r *http.Request) {
 	var request types.VerifyRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&request); err != nil {
-		a.writeErrorResponse(w, http.StatusBadRequest, err)
+		a.writeErrorResponse(w, http.StatusBadRequest, pkgerr.Wrap(err,
+			"unmarshaling request body"))
+		return
 	}
 	if err := validateVerifyRequest(request); err != nil {
-		a.writeErrorResponse(w, http.StatusBadRequest, err)
+		a.writeErrorResponse(w, http.StatusBadRequest, pkgerr.Wrap(err,
+			"validating request"))
 		return
 	}
 
@@ -109,17 +113,24 @@ func (a apiImpl) verify(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = w.Write(b)
 	if err != nil {
-		a.writeErrorResponse(w, http.StatusInternalServerError, err)
+		a.writeErrorResponse(w, http.StatusInternalServerError,
+			pkgerr.Wrap(err, "writing response body"))
 		return
 	}
 }
 
 func (a *apiImpl) reset(w http.ResponseWriter, r *http.Request) {
 	if err := a.service.ResetStore(); err != nil {
-		a.writeErrorResponse(w, http.StatusInternalServerError, err)
+		if _, ok := err.(service.ServiceError); ok {
+			a.writeErrorResponse(w, http.StatusInternalServerError, err)
+		} else {
+			a.writeErrorResponse(w, http.StatusBadRequest, err)
+		}
 	}
 }
 
+// validateVerifyRequest does field-level validation on the incoming
+// verify address.
 func validateVerifyRequest(request types.VerifyRequest) error {
 	if request.Username == "" {
 		return errors.New("missing username")
@@ -140,28 +151,9 @@ func validateVerifyRequest(request types.VerifyRequest) error {
 // the cause.
 func (a apiImpl) writeErrorResponse(w http.ResponseWriter, code int, err error) {
 	a.log.Errorw("invoke error", "error", err, "code", code)
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(code)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	fmt.Println("error:", err.Error())
 	b, _ := json.MarshalIndent(types.StatusResponse{Status: err.Error()}, "", "  ")
 	w.Write(b)
-}
-
-// Map a Go eror to an HTTP status type
-func errorToStatusCode(err error, nilCode int) int {
-	switch err.(type) {
-	/*
-		case service.InternalError:
-			return http.StatusInternalServerError
-		case service.FormatError:
-			return http.StatusBadRequest
-		case store.AlreadyExistsError:
-			return http.StatusConflict
-		case store.NotFoundError:
-			return http.StatusNotFound
-	*/
-	case nil:
-		return nilCode
-	default:
-		return http.StatusInternalServerError
-	}
 }

@@ -1,6 +1,5 @@
-// Package types defines types that are used throughout the
-// service, primarily struct types with JSON mappings and
-// custom types used within those types, that are used for
+// Package types defines types that are used throughout the service,
+// primarily struct types with JSON mappings that are used for
 // REST requests and respones.
 package types
 
@@ -9,6 +8,8 @@ import (
 )
 
 const (
+	// MaxSpeed is the limit such that any speed greater than this will
+	// trigger a suspicious alert.
 	MaxSpeed = 500
 )
 
@@ -27,6 +28,8 @@ type VerifyRequest struct {
 	IPAddress     string `json:"ip_address"`
 }
 
+// CurrentGeoStat is a memeber of the response object that contains
+// information about the corresponding incoming request.
 type CurrentGeoStat struct {
 	Lat    float64 `json:"lat"`
 	Lon    float64 `json:"lon"`

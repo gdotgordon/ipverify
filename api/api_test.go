@@ -70,6 +70,9 @@ func TestStatusEndpoint(t *testing.T) {
 	}
 }
 
+// TestVerify test that the HTTP hadndler function properly unmarshals
+// the request, marshals a response, amd generates proper statsus codes.
+// It uses a mock server so we can focus on the HTTP aspects.
 func TestVerify(t *testing.T) {
 	for i, v := range []struct {
 		verifyReq    types.VerifyRequest // VerifyRequest object
@@ -134,10 +137,10 @@ func TestVerify(t *testing.T) {
 			expErrMsg:    "invalid timestamp: -4",
 		},
 	} {
-		ms := &MockService{}
+		ms := &mockService{}
 		api := apiImpl{service: ms, log: newTestLogger(t)}
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(api.verify)
+		handler := http.HandlerFunc(api.verifyIP)
 
 		// Prep the request based on the chosen params.
 		vreq := req1
@@ -227,10 +230,13 @@ func newTestLogger(t *testing.T) *zap.SugaredLogger {
 	return lg.Sugar()
 }
 
-type MockService struct {
+// The mockService implements the service API but keys on the username of
+// the request to determine the response type, for example, wehether the
+// response incldues a previous and/or subsequent event.
+type mockService struct {
 }
 
-func (ms *MockService) VerifyIP(req types.VerifyRequest) (*types.VerifyResponse, error) {
+func (ms *mockService) VerifyIP(req types.VerifyRequest) (*types.VerifyResponse, error) {
 	var resp types.VerifyResponse
 
 	switch req.Username {
@@ -255,6 +261,6 @@ func (ms *MockService) VerifyIP(req types.VerifyRequest) (*types.VerifyResponse,
 	}
 }
 
-func (ms *MockService) ResetStore() error {
+func (ms *mockService) ResetStore() error {
 	return nil
 }

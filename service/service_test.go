@@ -160,7 +160,7 @@ func TestVerify(t *testing.T) {
 		expCurr     types.CurrentGeoStat  // Data from current request returned
 		expPrev     *types.GeoEvent       // Previous event returned
 		expSucc     *types.GeoEvent       // Subsequent event returned
-		expErrMsg   string                // Expected error message
+		expErrMsg   string                // Force an error to happen
 	}{
 		{
 			description: "To empty DB",
@@ -187,6 +187,23 @@ func TestVerify(t *testing.T) {
 			payload:     makeReq("Jane", FAUAddr, now),
 			expCurr:     makeCurrGeo(FAUCoords, 5),
 			expPrev:     makeGeoEvent(FAUAddr, 0, false, FAUCoords, 5, ago(time.Hour, now)),
+		},
+		{
+			description: "Predecessor for user, faulty request error",
+			seed: []types.VerifyRequest{
+				{
+					Username:      "Bob",
+					UnixTimestamp: ago(72*time.Hour, now),
+					EventUUID:     "4b1971d6-da85-467f-b52e-528eb71b13f1",
+					IPAddress:     BrownAddr,
+				}},
+			payload: types.VerifyRequest{
+				Username:      "Bob",
+				UnixTimestamp: now,
+				EventUUID:     "4b1971d6-da85-467f-b52e-528eb71b13f1",
+				IPAddress:     BrownAddr,
+			},
+			expErrMsg: "UNIQUE constraint failed: items.Uuid",
 		},
 		{
 			description: "Successor for user, valid distance",
@@ -252,6 +269,36 @@ func TestVerify(t *testing.T) {
 			expPrev: makeGeoEvent(BrownAddr, 26, false, BrownCoords, 5, ago(200*time.Hour, now)),
 			expSucc: makeGeoEvent(UCLAAddr, 688, true, UCLACoords, 10, ago(148*time.Hour, now)),
 		},
+		{
+			description: "Record with equal timestamp should be predecessor",
+			seed: []types.VerifyRequest{
+				makeReq("Ralph", UCLAAddr, ago(150*time.Hour, now)),
+				makeReq("Annie", ArkansasAddr, ago(100*time.Hour, now)),
+				makeReq("Angie", BrownAddr, ago(150*time.Hour, now)), // *** Should choose this (dup time) as predecessor
+				makeReq("Angie", UCLAAddr, ago(72*time.Hour, now)),
+				makeReq("Angie", UCLAAddr, ago(148*time.Hour, now)), // *** Should choose this as successor
+				makeReq("Joanne", ArkansasAddr, ago(96*time.Hour, now)),
+				makeReq("Joanne", BrownAddr, ago(32*time.Hour, now)),
+			},
+			payload: makeReq("Angie", ArkansasAddr, ago(150*time.Hour, now)),
+			expCurr: makeCurrGeo(ArkansasCoords, 5),
+			expPrev: makeGeoEvent(BrownAddr, -1, true, BrownCoords, 5, ago(200*time.Hour, now)),
+			expSucc: makeGeoEvent(UCLAAddr, 688, true, UCLACoords, 10, ago(148*time.Hour, now)),
+		},
+		{
+			description: "Matching timestamp, but different user",
+			seed: []types.VerifyRequest{
+				makeReq("Ralph", UCLAAddr, ago(150*time.Hour, now)),
+				makeReq("Annie", ArkansasAddr, ago(100*time.Hour, now)),
+				makeReq("Angie", UCLAAddr, ago(72*time.Hour, now)),
+				makeReq("Angie", UCLAAddr, ago(148*time.Hour, now)), // *** Should choose this as successor
+				makeReq("Joanne", ArkansasAddr, ago(96*time.Hour, now)),
+				makeReq("Joanne", BrownAddr, ago(32*time.Hour, now)),
+			},
+			payload: makeReq("Angie", ArkansasAddr, ago(150*time.Hour, now)),
+			expCurr: makeCurrGeo(ArkansasCoords, 5),
+			expSucc: makeGeoEvent(UCLAAddr, 688, true, UCLACoords, 10, ago(148*time.Hour, now)),
+		},
 	} {
 		if err := srv.ResetStore(); err != nil {
 			t.Fatalf("'%s': error resetting DB: %v", v.description, err)
@@ -270,11 +317,13 @@ func TestVerify(t *testing.T) {
 				t.Errorf("'%s': expected error '%s', but got no error", v.description,
 					v.expErrMsg)
 			} else if err.Error() != v.expErrMsg {
-				t.Errorf("'%s': expected error string '%s', got '%s", v.description,
+				t.Errorf("'%s': expected error string '%s', got '%s'", v.description,
 					v.expErrMsg, err.Error())
 			}
+			return
 		} else if err != nil {
 			t.Errorf("'%s' got unexpected error '%v'", v.description, err)
+			return
 		}
 
 		var expResp types.VerifyResponse

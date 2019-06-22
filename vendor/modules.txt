@@ -6,6 +6,8 @@ github.com/gorilla/mux
 github.com/mattn/go-sqlite3
 # github.com/oschwald/maxminddb-golang v1.3.1
 github.com/oschwald/maxminddb-golang
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
 # go.uber.org/atomic v1.4.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.1.0

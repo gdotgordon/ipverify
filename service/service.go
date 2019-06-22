@@ -10,6 +10,7 @@ import (
 
 	"github.com/gdotgordon/ipverify/types"
 	"github.com/oschwald/maxminddb-golang"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -26,6 +27,14 @@ type Location struct {
 	Longitude      float64 `maxminddb:"longitude"`
 	MetroCode      uint    `maxminddb:"metro_code"`
 	TimeZone       string  `maxminddb:"time_zone"`
+}
+
+// ServiceError is used to tag internal server errors to distinguish them from
+// other things, such as user errors.
+type ServiceError string
+
+func (se ServiceError) Error() string {
+	return string(se)
 }
 
 // Service defines the sets of functions handled by IP verify service
@@ -49,7 +58,7 @@ type VerifyService struct {
 func New(mmDBPath string, store Store, log *zap.SugaredLogger) (*VerifyService, error) {
 	mmReader, err := maxminddb.Open(mmDBPath)
 	if err != nil {
-		return nil, err
+		return nil, ServiceError(err.Error())
 	}
 	return &VerifyService{mmReader: mmReader, store: store, log: log}, nil
 }
@@ -61,7 +70,7 @@ func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyRespons
 	// First add the current record to the store.  This will reduce the vulnerability
 	// of two nearly simutaneous requests missing each other's new event.
 	if err := vs.store.AddRecord(req); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "add record to store")
 	}
 
 	// A GeoEvent is the data for the previous and next requests relative
@@ -72,13 +81,13 @@ func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyRespons
 	// First get the prior and next items (if they exist) from the store.
 	prev, nxt, err := vs.store.GetPriorNext(req.Username, req.EventUUID, req.UnixTimestamp)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting prior and subsequent records")
 	}
 
 	// Get the coordinates and radius for the incoming request.
 	curLoc, err := lookupIP(req.IPAddress, vs.mmReader)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "IP lookup")
 	}
 
 	// Fill in the part of the response object for the current request.
@@ -91,13 +100,13 @@ func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyRespons
 	if prev != nil {
 		pge, err = vs.geoEventFromRequest(curLoc, &req, prev)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "preparing return data")
 		}
 	}
 	if nxt != nil {
 		nge, err = vs.geoEventFromRequest(curLoc, &req, nxt)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "calculating verify data")
 		}
 	}
 	resp.PrecedingIPAccess = pge
@@ -107,7 +116,10 @@ func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyRespons
 
 // ResetStore clears the database.
 func (vs *VerifyService) ResetStore() error {
-	return vs.store.Clear()
+	if err := vs.store.Clear(); err != nil {
+		return ServiceError(err.Error())
+	}
+	return nil
 }
 
 // Shutdown does cleanup tasks.
