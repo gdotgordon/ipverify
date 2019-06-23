@@ -32,7 +32,7 @@ ports:
       - '8080:8080'
 ```
 
-To stop the server, simply type `docker-compose down` or `docker-compose down --rm all` (to remove the image).
+To stop the server, simply type `docker-compose down` or `docker-compose down --rmi all` (to remove the image).
 
 To summarize, here are the steps:
 
