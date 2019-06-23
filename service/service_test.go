@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -270,6 +269,37 @@ func TestVerify(t *testing.T) {
 			expSucc: makeGeoEvent(UCLAAddr, 688, true, UCLACoords, 10, ago(148*time.Hour, now)),
 		},
 		{
+			description: "Predecessor valid distance, successor valid distance, including other users",
+			seed: []types.VerifyRequest{
+				makeReq("Annie", ArkansasAddr, ago(100*time.Hour, now)),
+				makeReq("Angie", ArkansasAddr, ago(200*time.Hour, now)), // *** Should choose this as predecessor
+				makeReq("Angie", UCLAAddr, ago(72*time.Hour, now)),
+				makeReq("Angie", UCLAAddr, ago(146*time.Hour, now)), // *** Should choose this as successor
+				makeReq("Joanne", ArkansasAddr, ago(96*time.Hour, now)),
+				makeReq("Joanne", BrownAddr, ago(32*time.Hour, now)),
+			},
+			payload: makeReq("Angie", ArkansasAddr, ago(150*time.Hour, now)),
+			expCurr: makeCurrGeo(ArkansasCoords, 5),
+			expPrev: makeGeoEvent(ArkansasAddr, 0, false, ArkansasCoords, 5, ago(200*time.Hour, now)),
+			expSucc: makeGeoEvent(UCLAAddr, 344, false, UCLACoords, 10, ago(146*time.Hour, now)),
+		},
+		{
+			description: "Predecessor invalid distance, successor valid distance, including other users",
+			seed: []types.VerifyRequest{
+				makeReq("Annie", ArkansasAddr, ago(100*time.Hour, now)),
+				makeReq("Angie", ArkansasAddr, ago(300*time.Hour, now)),
+				makeReq("Angie", BrownAddr, ago(151*time.Hour, now)), // *** Should choose this as predecessor
+				makeReq("Angie", UCLAAddr, ago(72*time.Hour, now)),
+				makeReq("Angie", UCLAAddr, ago(146*time.Hour, now)), // *** Should choose this as successor
+				makeReq("Joanne", ArkansasAddr, ago(96*time.Hour, now)),
+				makeReq("Joanne", BrownAddr, ago(32*time.Hour, now)),
+			},
+			payload: makeReq("Angie", ArkansasAddr, ago(150*time.Hour, now)),
+			expCurr: makeCurrGeo(ArkansasCoords, 5),
+			expPrev: makeGeoEvent(BrownAddr, 1281, true, BrownCoords, 5, ago(151*time.Hour, now)),
+			expSucc: makeGeoEvent(UCLAAddr, 344, false, UCLACoords, 10, ago(146*time.Hour, now)),
+		},
+		{
 			description: "Record with equal timestamp should be predecessor",
 			seed: []types.VerifyRequest{
 				makeReq("Ralph", UCLAAddr, ago(150*time.Hour, now)),
@@ -282,7 +312,7 @@ func TestVerify(t *testing.T) {
 			},
 			payload: makeReq("Angie", ArkansasAddr, ago(150*time.Hour, now)),
 			expCurr: makeCurrGeo(ArkansasCoords, 5),
-			expPrev: makeGeoEvent(BrownAddr, -1, true, BrownCoords, 5, ago(200*time.Hour, now)),
+			expPrev: makeGeoEvent(BrownAddr, -1, true, BrownCoords, 5, ago(150*time.Hour, now)),
 			expSucc: makeGeoEvent(UCLAAddr, 688, true, UCLACoords, 10, ago(148*time.Hour, now)),
 		},
 		{
@@ -304,8 +334,6 @@ func TestVerify(t *testing.T) {
 			t.Fatalf("'%s': error resetting DB: %v", v.description, err)
 		}
 
-		x, _ := store.GetAllRows()
-		fmt.Printf("All rows: %v\n", x)
 		for _, r := range v.seed {
 			if err := srv.store.AddRecord(r); err != nil {
 				t.Errorf("'%s': error ", v.description)
@@ -320,10 +348,9 @@ func TestVerify(t *testing.T) {
 				t.Errorf("'%s': expected error string '%s', got '%s'", v.description,
 					v.expErrMsg, err.Error())
 			}
-			return
+			continue
 		} else if err != nil {
 			t.Errorf("'%s' got unexpected error '%v'", v.description, err)
-			return
 		}
 
 		var expResp types.VerifyResponse
