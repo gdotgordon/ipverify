@@ -153,7 +153,6 @@ func (a apiImpl) writeErrorResponse(w http.ResponseWriter, code int, err error) 
 	a.log.Errorw("invoke error", "error", err, "code", code)
 	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	fmt.Println("error:", err.Error())
 	b, _ := json.MarshalIndent(types.StatusResponse{Status: err.Error()}, "", "  ")
 	w.Write(b)
 }
