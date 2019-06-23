@@ -152,7 +152,7 @@ I found that adding an index on the timestamp key improved performance of repeat
 I didn't have evidence to suggest lookups from the same point A to point B would happen enough to justify a cache, and while it's floating point math, it doesn't seem to be the biggest issue.
 
 ## MaxMind DB
-To cache or not to cache?  Well, looking at the source code, we see it is ok to call concurrently, and beyond that, the entire database appears to be mapped into memory, using `mmap()`.  So this is effectively a cache already.  Adding a cache on top of this adds contention for a mutex to update that cache, so that isn't necessarily a win over the plain concurrency-safe read-only in memory database.  That said, if I had more time, I'd experiment with an LRU cache.
+To cache or not to cache?  Well, looking at the source code, we see it is ok to call concurrently, and beyond that, the entire database appears to be mapped into memory, using `mmap()` (note from the author on code being concurrent: https://github.com/oschwald/maxminddb-golang/issues/39).  So this is effectively a cache already.  Adding a cache on top of this adds contention for a mutex to update that cache, so that isn't necessarily a win over the plain concurrency-safe read-only in memory database.  That said, if I had more time, I'd experiment with an LRU cache.
 
 # Assumptions
 The two biggest uncertainties to me were what, if anything, to do with the radiuses of uncertainty, and how to handle the probably rare case of two records from the same user with an exactly equal timestamp.  The database queries I wrote do all the sorting and location of the two adjacent events we are int4erested in - we do *not* naively iterate through all the rows for a given user.
