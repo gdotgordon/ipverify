@@ -1,5 +1,4 @@
 *.db
 .vscode/**
 ipverify
-mmdb/*
 db/*
