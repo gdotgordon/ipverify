@@ -167,14 +167,12 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 // in the assignment).
 func calculateSpeed(lat1, lon1 float64, time1 int64, lat2, lon2 float64, time2 int64) int64 {
 	dist := haversine(lat1, lon1, lat2, lon2)
-	fmt.Println("******Haverisne", dist)
 
 	// We don't want to divide by 0, so we use -1 as an indicator for this.
 	if time1 == time2 {
 		return -1
 	}
 	t := math.Abs(float64(time2 - time1))
-	fmt.Printf("time: %f, distance %f, %f\n", t, dist, (dist/t)*3600)
 	return int64(math.Round((dist / t) * 3600))
 }
 
