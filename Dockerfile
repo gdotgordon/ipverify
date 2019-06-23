@@ -3,8 +3,6 @@ FROM golang:1.12.6-alpine
 
 RUN apk add build-base
 
-Run which wget
-
 WORKDIR /go/src/github.com/gdotgordon/ipverify
 
 COPY . /go/src/github.com/gdotgordon/ipverify

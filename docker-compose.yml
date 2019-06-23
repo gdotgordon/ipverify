@@ -7,3 +7,5 @@ services:
     build: .
     ports:
       - '8080'
+    environment:
+      IPVERIFY_LOG_LEVEL: 'production'

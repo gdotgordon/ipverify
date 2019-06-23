@@ -29,12 +29,13 @@ type Location struct {
 	TimeZone       string  `maxminddb:"time_zone"`
 }
 
-// ServiceError is used to tag internal server errors to distinguish them from
-// other things, such as user errors.
-type ServiceError string
+// Error is used to tag internal server errors to distinguish them from
+// other things, such as user errors.  As per golint, it was renamed
+// from ServiceException due to "stuttering".
+type Error string
 
-func (se ServiceError) Error() string {
-	return string(se)
+func (e Error) Error() string {
+	return string(e)
 }
 
 // Service defines the sets of functions handled by IP verify service
@@ -58,7 +59,7 @@ type VerifyService struct {
 func New(mmDBPath string, store Store, log *zap.SugaredLogger) (*VerifyService, error) {
 	mmReader, err := maxminddb.Open(mmDBPath)
 	if err != nil {
-		return nil, ServiceError(err.Error())
+		return nil, Error(err.Error())
 	}
 	return &VerifyService{mmReader: mmReader, store: store, log: log}, nil
 }
@@ -117,7 +118,7 @@ func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyRespons
 // ResetStore clears the database.
 func (vs *VerifyService) ResetStore() error {
 	if err := vs.store.Clear(); err != nil {
-		return ServiceError(err.Error())
+		return Error(err.Error())
 	}
 	return nil
 }

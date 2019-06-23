@@ -26,9 +26,11 @@ const (
 type cleanupTask func()
 
 var (
-	portNum  int    // listen port
-	logLevel string // zap log level
-	timeout  int    // server timeout in seconds
+	portNum         int    // listen port
+	logLevel        string // zap log level
+	timeout         int    // server timeout in seconds
+	maxMindFilepath string // location of Maxmind db file
+	dbFilePath      string // location of SQLite3 db
 )
 
 func init() {
@@ -36,6 +38,10 @@ func init() {
 	flag.StringVar(&logLevel, "log", "production",
 		"log level: 'production', 'development'")
 	flag.IntVar(&timeout, "timeout", 30, "server timeout (seconds)")
+	flag.StringVar(&maxMindFilepath, "mmdb", "mmdb/GeoLite2-City.mmdb",
+		"location of MaxMind DB file")
+	flag.StringVar(&dbFilePath, "db", "requests.db",
+		"location of SQLite DB file")
 }
 
 func main() {
@@ -59,12 +65,12 @@ func main() {
 	// main program.
 	muxer := mux.NewRouter()
 
-	store, err := service.NewSQLiteStore("requests.db", log)
+	store, err := service.NewSQLiteStore(dbFilePath, log)
 	if err != nil {
 		log.Errorw("Error initializing service", "error", err)
 		os.Exit(1)
 	}
-	service, err := service.New("./mmdb/GeoLite2-City.mmdb", store, log)
+	service, err := service.New(maxMindFilepath, store, log)
 	if err != nil {
 		log.Errorw("Error initializing service", "error", err)
 		os.Exit(1)
@@ -99,7 +105,7 @@ func initLogging() (*zap.SugaredLogger, error) {
 	var lg *zap.Logger
 	var err error
 
-	pdl := strings.ToLower(os.Getenv("PRODUCE_LOG_LEVEL"))
+	pdl := strings.ToLower(os.Getenv("IPVERIFY_LOG_LEVEL"))
 	if strings.HasPrefix(pdl, "d") {
 		logLevel = "development"
 	}

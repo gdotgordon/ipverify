@@ -36,9 +36,9 @@ type Store interface {
 // driver is safe for concurrent reads, but there are issues with concurrent
 // writes, hence a mutex is required.
 type SQLiteStore struct {
+	sync.RWMutex
 	db      *sql.DB
 	addStmt *sql.Stmt
-	mu      sync.RWMutex
 	log     *zap.SugaredLogger
 }
 
@@ -64,8 +64,8 @@ func NewSQLiteStore(filepath string, log *zap.SugaredLogger) (*SQLiteStore, erro
 
 // AddRecord adds a single new request item to the database.
 func (sqs *SQLiteStore) AddRecord(item types.VerifyRequest) error {
-	sqs.mu.Lock()
-	defer sqs.mu.Unlock()
+	sqs.Lock()
+	defer sqs.Unlock()
 
 	sqs.log.Debugw("adding db row", "item", item)
 	_, err := sqs.addStmt.Exec(item.EventUUID, item.Username, item.IPAddress, item.UnixTimestamp)
@@ -82,8 +82,8 @@ func (sqs *SQLiteStore) GetAllRows() ([]types.VerifyRequest, error) {
 		SELECT Uuid, Username, Ipaddr, Unix FROM items
         ORDER BY Unix ASC
         `
-	sqs.mu.RLock()
-	defer sqs.mu.RUnlock()
+	sqs.RLock()
+	defer sqs.RUnlock()
 
 	rows, err := sqs.db.Query(sqlReadall)
 	if err != nil {
@@ -112,8 +112,8 @@ func (sqs *SQLiteStore) GetPriorNext(username string, uuid string,
 	timestamp int64) (*types.VerifyRequest, *types.VerifyRequest, error) {
 	var prev, next *types.VerifyRequest
 
-	sqs.mu.RLock()
-	defer sqs.mu.RUnlock()
+	sqs.RLock()
+	defer sqs.RUnlock()
 
 	// Use two queries, one for prior timestamps (but return only the latest
 	// of those) and one for subsequent logins, again, only capturing the
@@ -179,5 +179,14 @@ func createTable(db *sql.DB, log *zap.SugaredLogger) error {
 		return err
 	}
 	log.Infow("Created table", "name", "items")
+
+	crtNdx := `CREATE INDEX "timeIndex" ON items (UNIX);`
+	_, err = db.Exec(crtNdx)
+	if err != nil {
+		log.Errorw("error creating index: %v", "error", err)
+		return err
+	}
+	log.Infow("Created index", "name", "timeIndex")
+
 	return nil
 }

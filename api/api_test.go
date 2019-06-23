@@ -113,28 +113,28 @@ func TestVerify(t *testing.T) {
 			useName:   "",
 			verifyReq: req1,
 			expStatus: http.StatusBadRequest,
-			expErrMsg: "missing username",
+			expErrMsg: "validating request: missing username",
 		},
 		{
 			useName:   "bob",
 			badUUID:   true,
 			verifyReq: req1,
 			expStatus: http.StatusBadRequest,
-			expErrMsg: "invalid UUID length: 3",
+			expErrMsg: "validating request: invalid UUID length: 3",
 		},
 		{
 			useName:   "bob",
 			badIPAddr: true,
 			verifyReq: req1,
 			expStatus: http.StatusBadRequest,
-			expErrMsg: "invalid IP address: 3.4",
+			expErrMsg: "validating request: invalid IP address: 3.4",
 		},
 		{
 			useName:      "bob",
 			badTimestamp: true,
 			verifyReq:    req1,
 			expStatus:    http.StatusBadRequest,
-			expErrMsg:    "invalid timestamp: -4",
+			expErrMsg:    "validating request: invalid timestamp: -4",
 		},
 	} {
 		ms := &mockService{}

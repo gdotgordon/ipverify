@@ -121,7 +121,7 @@ func (a apiImpl) verifyIP(w http.ResponseWriter, r *http.Request) {
 
 func (a *apiImpl) reset(w http.ResponseWriter, r *http.Request) {
 	if err := a.service.ResetStore(); err != nil {
-		if _, ok := err.(service.ServiceError); ok {
+		if _, ok := err.(service.Error); ok {
 			a.writeErrorResponse(w, http.StatusInternalServerError, err)
 		} else {
 			a.writeErrorResponse(w, http.StatusBadRequest, err)
