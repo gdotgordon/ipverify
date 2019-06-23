@@ -67,39 +67,38 @@ For the `v1/verify` endpoint the main items of interest are the JSON request and
 The request looks like this:
 ```
 {
-	"username" : "Bob",
-	"unix_timestamp": 1514859999,
-	"event_uuid": "85ad929a-db03-4bf4-9541-8f728fa12e42",
-	"ip_address": "128.148.252.151"
+  "username": "Angie",
+  "unix_timestamp": 1560763193,
+  "event_uuid": "eb3e77b5-9672-419d-9fa5-dad2a0c3573b",
+  "ip_address": "130.184.5.181"
 }
 ```
 
 The repsonse will have up to three sections, always the first part with info from the current request, and then a previous and subsequent acceess (if either exists).  Note the assignment description said each preceding and subsequent access should contain a field named *suspicious*, but then the example showed those fields outside of those elements.  I found the documented way to be more intuitve for a user, so the suspicious behavior is a field *inside* the preceding and subsequent IP access.
 ```
 {
-  {
-    "currentGeo":
+  "currentGeo": {
     "lat": 36.0557,
     "lon": -94.1567,
     "radius": 5
   },
   "precedingIpAccess": {
     "ip": "128.148.252.151",
-    "speed": 26,
-    "suspicious": false,
+    "speed": 1281,
+    "suspicious": true,
     "lat": 41.8244,
     "lon": -71.408,
     "radius": 5,
-    "timestamp": 1560578777
+    "timestamp": 1560759593
   },
   "subsequentIpAccess": {
     "ip": "128.97.27.37",
-    "speed": 688,
-    "suspicious": true,
+    "speed": 344,
+    "suspicious": false,
     "lat": 34.0648,
     "lon": -118.4414,
     "radius": 10,
-    "timestamp": 1560765977
+    "timestamp": 1560777593
   }
 }
 ```
