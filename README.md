@@ -55,12 +55,12 @@ volumes:
 ```
 This means the sqlite requests.db file will be persisted after the container is shut down, which seems to be the proper behavior.  If you'd prefer to have it start from a fresh db every time, you should remove those two lines.  Note also, you can invoke the /v1/reset endpoint at any time to clear the db.
 
-Tests
-To run the unit tests, you don't need the container running, just run go test -race ./... from the top-level directory.
+## Tests
+To run the unit tests, you don't need the container running, just run `go test ./...` from the top-level directory.
 
 The unit tests use the "table-driven" approach to writing tests where possible (which is to say almost always).
 
-There is also an integration test under tests/integration that focuses heavily on concurrent execution. You can run that from the root directory by invoking: go test -tags=integration -v -race -count=1 ./tests/integration.  This test runs outside the container, and looks for the ephemeral port by searching for the container by name. If you've started the container through `docker-compose`, this should work fine, as the tests know which server name to look for.
+There is also an integration test under tests/integration that focuses heavily on concurrent execution. You can run that from the root directory by invoking: `go test -tags=integration -v -race -count=1 ./tests/integration`.  This test runs outside the container, and looks for the ephemeral port by searching for the container by name. If you've started the container through `docker-compose`, this should work fine, as the tests know which server name to look for.
 
 ## Key Items and Artifacts and How To Run the IP Verify Service
 There are three endpoints:
@@ -82,15 +82,7 @@ The request looks like this:
 }
 ```
 
-The response will have up to three sections, always the first part with info from the current request, and then a previous and subsequent acceess (if either exists).  Note the assignment description said each 
-
-
-
-
-
-
-
-ding and subsequent access should contain a field named *suspicious*, but then the example showed those fields outside of those elements.  I found the documented way to be more intuitve for a user, so the suspicious behavior is a field *inside* the preceding and subsequent IP access.
+The response will have up to three sections, always the first part with info from the current request, and then a previous and subsequent acceess (if either exists).  Note the assignment description stated that each preceding and subsequent access should contain a field named *suspicious*, but then the example showed those fields outside of those elements.  I found the documented way to be more intuitve for a user, so the suspicious behavior is a field *inside* the preceding and subsequent IP access.
 ```
 {
   "currentGeo": {
