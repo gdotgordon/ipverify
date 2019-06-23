@@ -137,31 +137,31 @@ Contains the HTTP handlers for the various endpoints. Primary responsibility is 
 ### *service* package
 The service implements the Service interface, as `SQLiteService`.
 
-### Architecture, Optimizations and Assumptions
+## Architecture, Optimizations and Assumptions
 
 My goal was to write code that made intelligent tradeoffs between efficiency, maintainability, and practicality (given that there was only a week to work on this).
 
 Two of the biggest tools I used were reading the source code of external packages, Go profiling, plus the benchmark test I wrote `BenchmarkIndex()` in service/benchmark_test.go.  Using that test, I could swap in and out various ideas for optimization to see how they helped or hurt.
 
-## Database
+### Database
 The database is a single table storing the four incoming elements, with the unique UUID being the primary key.  It uses a RWMutex so that the reads may proceed when no writer is present.
 
 I found that adding an index on the timestamp key improved performance of repeated calls to the verify API by a factor of about 10-15%. which is pretty good.  The next idea I had for optimization for this was to keep a cache of the lastest timestamped incoming events, but to write a simple one would involve a slice with binary searches, and constant insertion and deletion of items, causing the list to be reassembled.  This also introduces the overhead of a mutex to write the cache, whereas straight reads to the database may be done concurrently.  Given that I was happy with the improvement from indexing, and not finding any caching packages out there to do exactly what is need (an LRU cache isn't exactly what we want, we need to preserve order), this is the final state of things.
 
-## Haversine function
+### Haversine function
 I didn't have evidence to suggest lookups from the same point A to point B would happen enough to justify a cache, and while it's floating point math, it doesn't seem to be the biggest issue.
 
-## MaxMind DB
+### MaxMind DB
 To cache or not to cache?  Well, looking at the source code, we see it is ok to call concurrently, and beyond that, the entire database appears to be mapped into memory, using `mmap()` (note from the author on code being concurrent: https://github.com/oschwald/maxminddb-golang/issues/39).  So this is effectively a cache already.  Adding a cache on top of this adds contention for a mutex to update that cache, so that isn't necessarily a win over the plain concurrency-safe read-only in memory database.  That said, if I had more time, I'd experiment with an LRU cache.
 
-# Assumptions
+### Assumptions
 The two biggest uncertainties to me were what, if anything, to do with the radiuses of uncertainty, and how to handle the probably rare case of two records from the same user with an exactly equal timestamp.  The database queries I wrote do all the sorting and location of the two adjacent events we are int4erested in - we do *not* naively iterate through all the rows for a given user.
 
 * Radius - The example in the handout didn't appear to do much with radiuses other than showing them, so I took a similar tack.  My thinking is that showing the radius of the previous or subsequent to the user gives them enough information to trust whether an access is in fact suspicious or not.  We could expand those previous and subsequent access elements to show various degrees of confidence for suspicion as the distances increase instead of the simple true/false boolean.
 
 * Exact timestamp match - this is not a simple one to resolve - the semantics of the response are only "previous" and "subsequent", so "concurrent" means - what?  We certainly don't want to ignore concurrent accesses, because they may actually be the most likely instance of a suspicioius or nefarious action.  So in the end, I decided to treat all comparisons of the incoming to an adjacent access that occur at exactly the same time as suspicious, and indicate so in the repsonse.  The other rub there is that to calculate the speed R = d/t, you'd end up dividing by 0, so I indicate it as -1.  Even if the IP address is the same, we can't really know for sure.  The last point on this is that I had to show the suspicious event as either previous or subsequent, so given that Hobson's choice, I decided to flag it as a previous access, given that it is already in the database.  
 
-### External packages used
+## External packages used
 
 * github.com/google/uuid - GUID checker and generator: BSD 3-Clause "New" or "Revised" License
 * github.com/gorilla/mux - HTTP muxer: BSD 3-Clause "New" or "Revised" License
