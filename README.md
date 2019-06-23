@@ -135,13 +135,13 @@ ions for the Request and Response types for the various REST invocations and a f
 Contains the HTTP handlers for the various endpoints. Primary responsibility is to unmarshal incoming requests, convert them to Go objects, and pass them off to the service layer, get the responses back from the service layer, convert any errors (or not) to appropriate HTTP status codes and send them back to the HTTP layer.
 
 ### *service* package
-The service implements the Service interface, as SQLiteService.
+The service implements the Service interface, as `SQLiteService`.
 
 ### Architecture, Optimizations and Assumptions
 
 My goal was to write code that made intelligent tradeoffs between efficiency, maintainability, and practicality (given that there was only a week to work on this).
 
-Two of the biggest tools I used were reading the source code of external packages, Go profiling, plus the benchmark test I wrote `BenchmarkIndex()` in service/benchmark_test.go.  Using that test, I could swap in and out various ideas for optimation to see how they helped or hurt.
+Two of the biggest tools I used were reading the source code of external packages, Go profiling, plus the benchmark test I wrote `BenchmarkIndex()` in service/benchmark_test.go.  Using that test, I could swap in and out various ideas for optimization to see how they helped or hurt.
 
 ## Database
 The database is a single table storing the four incoming elements, with the unique UUID being the primary key.  It uses a RWMutex so that the reads may proceed when no writer is present.
@@ -155,7 +155,7 @@ I didn't have evidence to suggest lookups from the same point A to point B would
 To cache or not to cache?  Well, looking at the source code, we see it is ok to call concurrently, and beyond that, the entire database appears to be mapped into memory, using `mmap()`.  So this is effectively a cache already.  Adding a cache on top of this adds contention for a mutex to update that cache, so that isn't necessarily a win over the plain concurrency-safe read-only in memory database.  That said, if I had more time, I'd experiment with an LRU cache.
 
 # Assumptions
-The two biggest uncertainties to me were what, if anything, to do with the radiuses of uncertainty, and how to handle the probably rare case of two records from the same user with an exactly equal timestamp.
+The two biggest uncertainties to me were what, if anything, to do with the radiuses of uncertainty, and how to handle the probably rare case of two records from the same user with an exactly equal timestamp.  The database queries I wrote do all the sorting and location of the two adjacent events we are int4erested in - we do *not* naively iterate through all the rows for a given user.
 
 * Radius - The example in the handout didn't appear to do much with radiuses other than showing them, so I took a similar tack.  My thinking is that showing the radius of the previous or subsequent to the user gives them enough information to trust whether an access is in fact suspicious or not.  We could expand those previous and subsequent access elements to show various degrees of confidence for suspicion as the distances increase instead of the simple true/false boolean.
 
