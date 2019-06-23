@@ -47,6 +47,14 @@ Use a tool like Postman to invoke the endpoints (again, see above to use a fixed
 
 * Also, the project uses the Uber Zap logger. This is configured to "production" log level by default, but may be set to "development" to see all the endpoints receiving their requests, by changing IPVERIY_LOG_LEVEL: 'production' to "development" in the docker-compose.yml.  But be warned, debug is very verbose.
 
+One more important note: the docker compose file contains the following mapping:
+
+```
+volumes:
+  - ./db:/root/db
+```
+This means the sqlite requests.db file will be persisted after the container is shut down, which seems to be the proper behavior.  If you'd prefer to have it start from a fresh db every time, you should remove those two lines.  Note also, you can invoke the /v1/reset endpoint at any time to clear the db.
+
 Tests
 To run the unit tests, you don't need the container running, just run go test -race ./... from the top-level directory.
 
