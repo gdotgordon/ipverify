@@ -52,7 +52,7 @@ func NewSQLiteStore(filepath string, log *zap.SugaredLogger) (*SQLiteStore, erro
 		return nil, errors.New("Unable to open database")
 	}
 
-	if err := createTable(db, log); err != nil {
+	if err := createTable(db, filepath, log); err != nil {
 		return nil, err
 	}
 	addStmt, err := db.Prepare(sqlAdditem)
@@ -164,17 +164,39 @@ func (sqs *SQLiteStore) Shutdown() {
 	}
 }
 
-func createTable(db *sql.DB, log *zap.SugaredLogger) error {
-	// create table if not exists
+// Create the table if needed.
+func createTable(db *sql.DB, filepath string, log *zap.SugaredLogger) error {
+
+	// If the table already exists, it will not be created.
+	checkTableQuery := `SELECT name FROM sqlite_master WHERE type='table';`
+	rows, err := db.Query(checkTableQuery)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var exists bool
+	for rows.Next() {
+		var tname string
+		rows.Scan(&tname)
+		if tname == "items" {
+			exists = true
+		}
+	}
+	if exists {
+		return nil
+	}
+
+	// create table and index as they do not yet exist
 	sqlTable := `
-	CREATE TABLE IF NOT EXISTS items(
+	CREATE TABLE items(
 			Uuid TEXT NOT NULL PRIMARY KEY,
 			Username TEXT NOT NULL,
 			Ipaddr TEXT NOT NULL,
 			Unix INT NOT NULL
 	);
 	`
-	_, err := db.Exec(sqlTable)
+	_, err = db.Exec(sqlTable)
 	if err != nil {
 		return err
 	}

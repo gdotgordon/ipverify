@@ -40,7 +40,7 @@ func init() {
 	flag.IntVar(&timeout, "timeout", 30, "server timeout (seconds)")
 	flag.StringVar(&maxMindFilepath, "mmdb", "mmdb/GeoLite2-City.mmdb",
 		"location of MaxMind DB file")
-	flag.StringVar(&dbFilePath, "db", "requests.db",
+	flag.StringVar(&dbFilePath, "db", "./db/requests.db",
 		"location of SQLite DB file")
 }
 

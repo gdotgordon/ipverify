@@ -2,3 +2,4 @@
 .vscode/**
 ipverify
 mmdb/*
+db/*

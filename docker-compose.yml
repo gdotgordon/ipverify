@@ -9,3 +9,5 @@ services:
       - '8080'
     environment:
       IPVERIFY_LOG_LEVEL: 'production'
+    volumes:
+      - ./db:/root/db
