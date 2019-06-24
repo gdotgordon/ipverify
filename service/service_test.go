@@ -18,6 +18,7 @@ func TestMaxMind(t *testing.T) {
 	}
 	defer db.Close()
 
+	log := newNoopLogger()
 	for i, v := range []struct {
 		ipAddr    string
 		expLat    float64
@@ -44,7 +45,7 @@ func TestMaxMind(t *testing.T) {
 			expErrStr: "Invalid IP addr format: 131.91.101",
 		},
 	} {
-		loc, err := lookupIP(v.ipAddr, db)
+		loc, err := lookupIP(v.ipAddr, db, log)
 		if err != nil {
 			if !v.expErr {
 				t.Errorf("(%d) expected no error, got %v", i, err)
@@ -114,19 +115,18 @@ type coords struct {
 }
 
 func TestVerify(t *testing.T) {
-	// For the test data, we incude some known locations from running "dig",
+	// For the test data, we include some known locations from running "dig",
 	// so we can judge the accuracy of the results.
 	// "128.148.252.151": brown.edu - Brown University, Providence, RI
 	// "131.91.101.181": fau.edu - Florida Atlantic U, Boca Ration FL
-	// Air distance between the above two is approx 1117 mi., so 2 days
-	// @500 MPH is fine, but 3 days is suspicious:
+	// Air distance between the above two is approx 1117 mi.
 	// https://www.distance-cities.com/distance-providence-ri-to-boca-raton-fl
 	// "128.97.27.37": ucla.edu - UCLA, Los Angeles CA
 	// distance LA->Providence: 2,575.81 mi
 	// https://www.distance.to/Providence/Los-Angeles
 	// Distance LA-> Boca Raton: 2,326.44 mi
-	//Distsance Boca Raton -> Little Rock, AR 929 Miles -> 2 hours will be suspicious
-	// NOTE: these distances are close to the actual distance for where these
+	// Distance Boca Raton -> Little Rock, AR 929 Miles -> 2 hours will be suspicious
+	// NOTE: these distances are at best close to the actual distance for where these
 	// Universities are, as they are genenric city-to-city-distances.
 	const (
 		BrownAddr    = "128.148.252.151"

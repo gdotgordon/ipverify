@@ -10,7 +10,7 @@ import (
 )
 
 // The purpose of this benchmark is to evaluate the usefulness of
-// various optimizations on the main verify() APIU, such as building
+// various optimizations on the main verify() API, such as building
 // an index on the timestamp in the datadase, caching IP lookups, etc.
 // It repeatedly invokes the verify endpoint with randomly generated
 // user names.
@@ -43,6 +43,8 @@ func BenchmarkIndex(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Randomnize the timestamps over the last 5 hours
 		req := makeReq(users[rand.Int()%20], "128.148.252.151", (now.Unix() - int64(rand.Int()%(3600*5))))
+
+		// Invoke the verify service
 		_, err := srv.VerifyIP(req)
 		if err != nil {
 			b.Fatalf("error verifying request: %v", err)

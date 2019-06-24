@@ -1,11 +1,12 @@
-# This docker-compose script builds our program from scratch, and also
-# runs the requisite redis image.
+# This docker-compose script builds our program from scratch.  Note
+# we mount the "db" subdirectory of the current directory in the container.
 version: "3.5"
 
 services:
   ipverify:
     build: .
     ports:
+    # This creates an ephemeral port, to use a definitive port change to '<extPort>:8080' 
       - '8080'
     environment:
       IPVERIFY_LOG_LEVEL: 'production'

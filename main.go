@@ -1,4 +1,4 @@
-// Package main runs the IP verify microservice.  It spins up an http
+// Package main runs the IP verify microservice.  It spins up an HTTP
 // server to handle requests, which are handled by the api package.
 package main
 
@@ -17,10 +17,6 @@ import (
 	"github.com/gdotgordon/ipverify/service"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
-)
-
-const (
-	seedFile = "seed.json"
 )
 
 type cleanupTask func()
@@ -65,17 +61,21 @@ func main() {
 	// main program.
 	muxer := mux.NewRouter()
 
+	// Initialize the store.
 	store, err := service.NewSQLiteStore(dbFilePath, log)
 	if err != nil {
 		log.Errorw("Error initializing service", "error", err)
 		os.Exit(1)
 	}
+
+	// Build the service, passing it the maxmind path and the store.
 	service, err := service.New(maxMindFilepath, store, log)
 	if err != nil {
 		log.Errorw("Error initializing service", "error", err)
 		os.Exit(1)
 	}
 
+	// Initialize the API layer.
 	if err := api.Init(ctx, muxer, service, log); err != nil {
 		log.Errorf("Error initializing API layer", "error", err)
 		os.Exit(1)
@@ -110,11 +110,14 @@ func initLogging() (*zap.SugaredLogger, error) {
 		logLevel = "development"
 	}
 
+	var cfg zap.Config
 	if logLevel == "development" {
-		lg, err = zap.NewDevelopment()
+		cfg = zap.NewDevelopmentConfig()
 	} else {
-		lg, err = zap.NewProduction()
+		cfg = zap.NewProductionConfig()
 	}
+	cfg.DisableStacktrace = true
+	lg, err = cfg.Build()
 	if err != nil {
 		return nil, err
 	}

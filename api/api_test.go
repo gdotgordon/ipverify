@@ -11,6 +11,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// The following will be converted to JSON to emulate responses from
+// the real service.
 var (
 	req1 = types.VerifyRequest{
 		Username:      "bob",

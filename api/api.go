@@ -94,6 +94,8 @@ func (a apiImpl) verifyIP(w http.ResponseWriter, r *http.Request) {
 			"unmarshaling request body"))
 		return
 	}
+
+	// Validate the parameters from the JSON.
 	if err := validateVerifyRequest(request); err != nil {
 		a.writeErrorResponse(w, http.StatusBadRequest, pkgerr.Wrap(err,
 			"validating request"))

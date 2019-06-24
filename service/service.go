@@ -1,6 +1,6 @@
 // Package service implements the functionality of the IP Verify service.  It
-// is the intermediary between the api package, which handles HTTP specifcs
-// JSON marshaling, and the store pacakge, which is the data store.
+// is shielded from HTTP specifcs and JSON marshaling by the API layer, and
+// it manages the data store, which is also implemented in this package.
 package service
 
 import (
@@ -31,7 +31,7 @@ type Location struct {
 
 // Error is used to tag internal server errors to distinguish them from
 // other things, such as user errors.  As per golint, it was renamed
-// from ServiceException due to "stuttering".
+// from ServiceError due to "stuttering" (service.NewService())
 type Error string
 
 func (e Error) Error() string {
@@ -76,17 +76,17 @@ func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyRespons
 
 	// A GeoEvent is the data for the previous and next requests relative
 	// to the incoming request.  Both may or may bot be present.
-	var resp types.VerifyResponse
 	var pge, nge *types.GeoEvent
+	var resp types.VerifyResponse
 
-	// First get the prior and next items (if they exist) from the store.
+	// Now get the prior and next items (if they exist) from the store.
 	prev, nxt, err := vs.store.GetPriorNext(req.Username, req.EventUUID, req.UnixTimestamp)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting prior and subsequent records")
 	}
 
 	// Get the coordinates and radius for the incoming request.
-	curLoc, err := lookupIP(req.IPAddress, vs.mmReader)
+	curLoc, err := lookupIP(req.IPAddress, vs.mmReader, vs.log)
 	if err != nil {
 		return nil, errors.Wrap(err, "IP lookup")
 	}
@@ -137,7 +137,7 @@ func (vs *VerifyService) Shutdown() {
 func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 	curEvent, otherEvent *types.VerifyRequest) (*types.GeoEvent, error) {
 
-	otherLoc, err := lookupIP(otherEvent.IPAddress, vs.mmReader)
+	otherLoc, err := lookupIP(otherEvent.IPAddress, vs.mmReader, vs.log)
 	if err != nil {
 		return nil, err
 	}
@@ -146,11 +146,13 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 		otherEvent.UnixTimestamp, curLoc.Latitude, curLoc.Longitude,
 		curEvent.UnixTimestamp)
 
+	// As documented in the readme, we use the special value -1 for the 0 time
+	// situation (two events at exactly he same Unix time.)
 	var suspicious bool
 	if speed == -1 || speed > types.MaxSpeed {
 		suspicious = true
 	}
-	ge := &types.GeoEvent{
+	ge := types.GeoEvent{
 		Speed:      speed,
 		Suspicious: suspicious,
 		IP:         otherEvent.IPAddress,
@@ -159,7 +161,7 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 		Radius:     otherLoc.AccuracyRadius,
 		Timestamp:  otherEvent.UnixTimestamp,
 	}
-	return ge, nil
+	return &ge, nil
 }
 
 // calculate speed uses the two sets of coorinates and corresponding timestamps
@@ -173,7 +175,11 @@ func calculateSpeed(lat1, lon1 float64, time1 int64, lat2, lon2 float64, time2 i
 		return -1
 	}
 	t := math.Abs(float64(time2 - time1))
-	return int64(math.Round((dist / t) * 3600))
+
+	// This calcuation is distance ((miles) * (sec/hr)) / sec = speed in miles/hr
+	// It seems less prone to underflow than (dist/t) * 3600, given that the earth's
+	// circumference is around 25 K miles, and a week of seconds is about the same number.
+	return int64(math.Round((dist * 3600) / t))
 }
 
 // Source: // https://play.golang.org/p/MZVh5bRWqN - bsaic code similar to these
@@ -193,7 +199,7 @@ func haversine(latFrom, lonFrom, latTo, lonTo float64) float64 {
 }
 
 // lookupIP does a MaxMind lookup, using the more efficient lower-level API.
-func lookupIP(ip string, db *maxminddb.Reader) (Location, error) {
+func lookupIP(ip string, db *maxminddb.Reader, log *zap.SugaredLogger) (Location, error) {
 	// Syntactic weirdness due to using recommended low-level API, which
 	// requires a struct tag.
 	var loc struct {
@@ -202,6 +208,7 @@ func lookupIP(ip string, db *maxminddb.Reader) (Location, error) {
 
 	ipn := net.ParseIP(ip)
 	if ipn == nil {
+		log.Errorw("bad IP address not caught by validation", "IPaddr", ip)
 		return loc.Loc, fmt.Errorf("Invalid IP addr format: %s", ip)
 	}
 	err := db.Lookup(ipn, &loc)

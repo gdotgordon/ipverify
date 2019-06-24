@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -51,6 +52,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// Ensure we can ping the status endpoint.
 func TestStatus(t *testing.T) {
 	resp, err := http.Get("http://" + verifyAddr + "/v1/status")
 	if err != nil {
@@ -77,7 +79,7 @@ func TestStatus(t *testing.T) {
 
 // What I've done here is "port" the unit test from service, so instead of directly
 // calling the service API, we are going end-to-end over HTTP.  But since there is
-// no API to simply add a user to the DB, we are calling the verify() AP{I, but ignoring
+// no API to simply add a user to the DB, we are calling the verify() API, but ignoring
 // the repsonse.  So the effect is to add the record to the DB and then everything is in
 // place for the verify call where we check the specifics.
 func TestVerify(t *testing.T) {
@@ -263,13 +265,20 @@ func TestVerify(t *testing.T) {
 			expSucc: makeGeoEvent(UCLAAddr, 688, true, UCLACoords, 10, ago(148*time.Hour, now)),
 		},
 	} {
-		invokeReset(t)
+		if err := invokeReset(t); err != nil {
+			t.Errorf("reset failed: %v", err)
+		}
+
+		// Populate the seed items by calling verify on them and ignoring
+		// the return value.
 		for _, r := range v.seed {
 			_, _, err := invokeVerify(r)
 			if err != nil {
 				t.Errorf("'%s': error ", v.description)
 			}
 		}
+
+		// Call verify the test payload - here we care about the result
 		resp, code, err := invokeVerify(v.payload)
 		if v.expErrMsg != "" {
 			if v.expCode != 0 && code != v.expCode {
@@ -307,12 +316,19 @@ func TestConcurrency(t *testing.T) {
 		users[i] = makeName()
 	}
 
+	var errBuf []string
+	var mu sync.Mutex
+
 	rand.Seed(time.Now().Unix())
-	invokeReset(t)
+	if err := invokeReset(t); err != nil {
+		t.Errorf("reset failed: %v", err)
+	}
 
 	now := time.Now().Unix()
 	var wg sync.WaitGroup
 	for i := 0; i < 20; i++ {
+		i := i
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -321,12 +337,17 @@ func TestConcurrency(t *testing.T) {
 				req := makeReq(users[rand.Intn(20)], "128.148.252.151", now-int64(rand.Intn(3600*5)))
 				_, code, err := invokeVerify(req)
 				if err != nil || code != http.StatusOK {
-					t.Errorf("failed: code: %d, err; %v", code, err)
+					mu.Lock()
+					errBuf = append(errBuf, fmt.Sprintf("%d: failed: code: %d, err; %v", i, code, err))
+					mu.Unlock()
 				}
 			}
 		}()
 	}
 	wg.Wait()
+	if errBuf != nil {
+		t.Errorf("one or more threads failed: %v", errBuf)
+	}
 }
 
 func getAppAddr(port string, app ...string) (string, error) {
@@ -425,19 +446,20 @@ func invokeVerify(request types.VerifyRequest) (*types.VerifyResponse, int, erro
 	return &vresp, resp.StatusCode, nil
 }
 
-func invokeReset(t *testing.T) {
+func invokeReset(t *testing.T) error {
 	req, err := http.NewRequest(http.MethodGet, "http://"+verifyAddr+"/v1/reset", nil)
 	if err != nil {
-		t.Fatal("reset error creating request", err)
+		return err
 	}
 
 	resp, err := verifyClient.Do(req)
 	if err != nil {
-		t.Fatal("reset returned unexpcted error", err)
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Bad status code resetting db", resp.StatusCode)
+		return fmt.Errorf("Bad status code resetting db: %d", resp.StatusCode)
 	}
+	return nil
 }
