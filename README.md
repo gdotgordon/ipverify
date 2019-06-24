@@ -122,7 +122,7 @@ Typical HTTP return codes:
 * 400 (Bad Request) if the request is non-conformant to the JSON unmarshal or contains invalid field values, including DB constraint violation, such as using a UUID that already exists in the database
 * 500 (Internal Server Error) typically won't happen unless there is a system failure
 
-Architecture and Code Layout
+### Architecture and Code Layout
 The code has a main package which starts the HTTP server. This package creates a signal handler which is tied to a context cancel function. This allows for clean shutdown. The main code creates a service object, which is a wrapper around the store package, which uses the sqlite3 database. This service is then passed to the api layer, for use with the mux'ed incoming requests.
 
 As mentioned, Uber Zap logging is used. In a real production product, I would have buried it in a logging interface.
