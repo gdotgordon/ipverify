@@ -86,7 +86,7 @@ The request looks like this:
 }
 ```
 
-The response will have up to three sections, always the first part with info from the current request, and then a previous and subsequent acceess (if either exists).  Note the assignment description stated that each preceding and subsequent access should contain a field named *suspicious*, but then the example showed those fields outside of those elements.  I found the documented way to be more intuitve for a user, so the suspicious behavior is a field *inside* the preceding and subsequent IP access.  Also note, the speed is rounded to a whole integer, as it is in the assignemnt sample, using `math.Round()`.
+The response will have up to three sections, always the first part with info from the current request, and then a previous and subsequent acceess (if either exists).  Note the assignment description stated that each preceding and subsequent access should contain a field named *suspiciousTravel*, but then the example showed those fields outside of those elements with a slightly different name.  I found the documented way to be more intuitve for a user, so the suspicious travel is a field *inside* the preceding and subsequent IP access.  Also note, the speed is rounded to a whole integer, as it is in the assignemnt sample, using `math.Round()`.
 ```
 {
   "currentGeo": {
@@ -97,7 +97,7 @@ The response will have up to three sections, always the first part with info fro
   "precedingIpAccess": {
     "ip": "128.148.252.151",
     "speed": 1281,
-    "suspicious": true,
+    "suspiciousTravel": true,
     "lat": 41.8244,
     "lon": -71.408,
     "radius": 5,
@@ -106,7 +106,7 @@ The response will have up to three sections, always the first part with info fro
   "subsequentIpAccess": {
     "ip": "128.97.27.37",
     "speed": 344,
-    "suspicious": false,
+    "suspiciousTravel": false,
     "lat": 34.0648,
     "lon": -118.4414,
     "radius": 10,
