@@ -145,7 +145,7 @@ The service implements the Service interface, as `SQLiteService`.
 
 My goal was to write code that made intelligent tradeoffs between efficiency, maintainability, and practicality (given that there was only a week to work on this).
 
-Two of the biggest tools I used were reading the source code of external packages, Go profiling, plus the benchmark test I wrote `BenchmarkIndex()` in service/benchmark_test.go.  Using that test, I could swap in and out various ideas for optimization to see how they helped or hurt.
+The most important tools I used for this were reading the source code of external packages, Go profiling, plus the benchmark test I wrote `BenchmarkIndex()` in service/benchmark_test.go.  Using that test, I could swap in and out various ideas for optimization to see how they helped or hurt.
 
 ### Database
 The database is a single table storing the four incoming elements, with the unique UUID being the primary key.  It uses a RWMutex so that the reads may proceed when no writer is present.
