@@ -80,7 +80,6 @@ func TestVerify(t *testing.T) {
 		verifyReq    types.VerifyRequest // VerifyRequest object
 		useName      string              // user name drives mock service respo
 		badTimestamp bool                // put bad timestamp in request
-		futTimestamp bool                // put in future timestamp
 		badUUID      bool                // put bad UUID in request
 		badIPAddr    bool                // put bad IP Addr in request
 		expStatus    int                 // expected HTTP return code
@@ -139,13 +138,6 @@ func TestVerify(t *testing.T) {
 			expStatus:    http.StatusBadRequest,
 			expErrMsg:    "validating request: invalid timestamp: -4",
 		},
-		{
-			useName:      "bob",
-			futTimestamp: true,
-			verifyReq:    req1,
-			expStatus:    http.StatusBadRequest,
-			expErrMsg:    "validating request: invalid future timestamp: 2224158217",
-		},
 	} {
 		ms := &mockService{}
 		api := apiImpl{service: ms, log: newTestLogger(t)}
@@ -163,10 +155,6 @@ func TestVerify(t *testing.T) {
 		}
 		if v.badTimestamp {
 			vreq.UnixTimestamp = -4
-		}
-		if v.futTimestamp {
-			// Sunday, June 24, 2040 1:43:37 PM
-			vreq.UnixTimestamp = 2224158217
 		}
 		b, err := json.MarshalIndent(vreq, "", "  ")
 		if err != nil {

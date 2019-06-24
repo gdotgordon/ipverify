@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/gdotgordon/ipverify/service"
 	"github.com/gdotgordon/ipverify/types"
@@ -137,16 +136,9 @@ func validateVerifyRequest(request types.VerifyRequest) error {
 	if request.Username == "" {
 		return errors.New("missing username")
 	}
-
 	if request.UnixTimestamp <= 0 {
 		return fmt.Errorf("invalid timestamp: %d", request.UnixTimestamp)
 	}
-
-	// Allow for clock skew of up to 15 minutes.
-	if request.UnixTimestamp > time.Now().Add(15*time.Minute).Unix() {
-		return fmt.Errorf("invalid future timestamp: %d", request.UnixTimestamp)
-	}
-
 	if _, err := uuid.Parse(request.EventUUID); err != nil {
 		return err
 	}
