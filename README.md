@@ -60,7 +60,7 @@ To run the unit tests, you don't need the container running, just run `go test .
 
 The unit tests use the "table-driven" approach to writing tests where possible (which is to say almost always).
 
-There is also an integration test under tests/integration that focuses heavily on concurrent execution. You can run that from the root directory by invoking: `go test -tags=integration -v -race -count=1 ./tests/integration`.  This test runs outside the container, and looks for the ephemeral port by searching for the container by name. If you've started the container through `docker-compose`, this should work fine, as the tests know which server name to look for.
+There is also an integration test under tests/integration that focuses on end-to-end and concurrent execution. You can run the integration tests from the root directory by invoking: `go test -tags=integration -v -race -count=1 ./tests/integration`.  This test runs outside the container, and looks for the ephemeral port by searching for the container by name. If you've started the container through `docker-compose`, this should work fine, as the tests know which server name to look for.
 
 ## Key Items and Artifacts and How To Run the IP Verify Service
 There are three endpoints:
