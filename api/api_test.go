@@ -28,23 +28,23 @@ var (
 	}
 
 	validGeoEvent = types.GeoEvent{
-		IP:         "131.91.101.181",
-		Speed:      0,
-		Suspicious: false,
-		Lat:        26.3796,
-		Lon:        -80.1029,
-		Radius:     5,
-		Timestamp:  1514850000,
+		IP:               "131.91.101.181",
+		Speed:            0,
+		SuspiciousTravel: false,
+		Lat:              26.3796,
+		Lon:              -80.1029,
+		Radius:           5,
+		Timestamp:        1514850000,
 	}
 
 	validGeoEvent2 = types.GeoEvent{
-		IP:         "135.91.101.181",
-		Speed:      0,
-		Suspicious: false,
-		Lat:        29.3796,
-		Lon:        -80.1029,
-		Radius:     10,
-		Timestamp:  1514850000,
+		IP:               "135.91.101.181",
+		Speed:            0,
+		SuspiciousTravel: false,
+		Lat:              29.3796,
+		Lon:              -80.1029,
+		Radius:           10,
+		Timestamp:        1514850000,
 	}
 )
 

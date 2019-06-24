@@ -153,13 +153,13 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 		suspicious = true
 	}
 	ge := types.GeoEvent{
-		Speed:      speed,
-		Suspicious: suspicious,
-		IP:         otherEvent.IPAddress,
-		Lat:        otherLoc.Latitude,
-		Lon:        otherLoc.Longitude,
-		Radius:     otherLoc.AccuracyRadius,
-		Timestamp:  otherEvent.UnixTimestamp,
+		Speed:            speed,
+		SuspiciousTravel: suspicious,
+		IP:               otherEvent.IPAddress,
+		Lat:              otherLoc.Latitude,
+		Lon:              otherLoc.Longitude,
+		Radius:           otherLoc.AccuracyRadius,
+		Timestamp:        otherEvent.UnixTimestamp,
 	}
 	return &ge, nil
 }

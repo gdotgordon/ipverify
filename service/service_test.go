@@ -383,13 +383,13 @@ func makeCurrGeo(c coords, radius uint16) types.CurrentGeoStat {
 func makeGeoEvent(ip string, speed int64, suspicious bool,
 	c coords, radius uint16, timestamp int64) *types.GeoEvent {
 	return &types.GeoEvent{
-		IP:         ip,
-		Speed:      speed,
-		Suspicious: suspicious,
-		Lat:        c.lat,
-		Lon:        c.lon,
-		Radius:     radius,
-		Timestamp:  timestamp,
+		IP:               ip,
+		Speed:            speed,
+		SuspiciousTravel: suspicious,
+		Lat:              c.lat,
+		Lon:              c.lon,
+		Radius:           radius,
+		Timestamp:        timestamp,
 	}
 }
 

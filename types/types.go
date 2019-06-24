@@ -40,13 +40,13 @@ type CurrentGeoStat struct {
 // or subsequent location.  It also indicates the "speed", and whether
 // it is considered suspicious
 type GeoEvent struct {
-	IP         string  `json:"ip"`
-	Speed      int64   `json:"speed"`
-	Suspicious bool    `json:"suspicious"`
-	Lat        float64 `json:"lat"`
-	Lon        float64 `json:"lon"`
-	Radius     uint16  `json:"radius"`
-	Timestamp  int64   `json:"timestamp"`
+	IP               string  `json:"ip"`
+	Speed            int64   `json:"speed"`
+	SuspiciousTravel bool    `json:"suspiciousTravel"`
+	Lat              float64 `json:"lat"`
+	Lon              float64 `json:"lon"`
+	Radius           uint16  `json:"radius"`
+	Timestamp        int64   `json:"timestamp"`
 }
 
 // VerifyResponse corresponds to the serialized JSON response.  Note both
