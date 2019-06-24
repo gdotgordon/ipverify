@@ -20,6 +20,8 @@ $
 ```
 Notice that running the `docker container ls` (or `docker ps`) shows you the ephemeral port number outside the container, in this case, port 32772. The integration test finds this port number, and also depends on the name of the image to be ipverify_ipverify, which is assured by running it through docker-compose.
 
+The initial build of the container is slowed somewhat by the mattn/sqllite3 package needing to build in C-code, but it will eventually complete.
+
 **Note: if you would rather run on the same fixed port all the time, simply change the following in docker-compose.yml:**
 ```
 ports:
@@ -116,9 +118,9 @@ The response will have up to three sections, always the first part with info fro
 
 Typical HTTP return codes:
 
-200 (OK) for successful requests
-400 (Bad Request) if the request is non-conformant to the JSON unmarshal or contains invalid field values, including DB constraint violation, such as using a UUID that already exists in the database
-500 (Internal Server Error) typically won't happen unless there is a system failure
+* 200 (OK) for successful requests
+* 400 (Bad Request) if the request is non-conformant to the JSON unmarshal or contains invalid field values, including DB constraint violation, such as using a UUID that already exists in the database
+* 500 (Internal Server Error) typically won't happen unless there is a system failure
 
 Architecture and Code Layout
 The code has a main package which starts the HTTP server. This package creates a signal handler which is tied to a context cancel function. This allows for clean shutdown. The main code creates a service object, which is a wrapper around the store package, which uses the sqlite3 database. This service is then passed to the api layer, for use with the mux'ed incoming requests.
