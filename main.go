@@ -44,8 +44,8 @@ func main() {
 	flag.Parse()
 
 	// We'll propagate the context with cancel thorughout the program,
-	// such as http clients, server methods we implement, and other
-	// loops using channels.
+	// to be used by various entities, such as http clients, server
+	// methods we implement, and other loops using channels.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -88,7 +88,7 @@ func main() {
 		WriteTimeout: time.Duration(timeout) * time.Second,
 	}
 
-	// Start Server
+	// Start server
 	go func() {
 		log.Infow("Listening for connections", "port", portNum)
 		if err := srv.ListenAndServe(); err != nil {
@@ -100,7 +100,7 @@ func main() {
 	waitForShutdown(ctx, srv, log, service.Shutdown)
 }
 
-// set up the logger, condsidering any env vars.
+// Set up the logger, condsidering any env vars.
 func initLogging() (*zap.SugaredLogger, error) {
 	var lg *zap.Logger
 	var err error

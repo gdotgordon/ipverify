@@ -72,13 +72,13 @@ func TestStatusEndpoint(t *testing.T) {
 	}
 }
 
-// TestVerify test that the HTTP hadndler function properly unmarshals
-// the request, marshals a response, amd generates proper statsus codes.
+// TestVerify tests that the HTTP hadndler functions properly.  It unmarshals
+// the request, marshals a response, amd generates proper status codes.
 // It uses a mock server so we can focus on the HTTP aspects.
 func TestVerify(t *testing.T) {
 	for i, v := range []struct {
 		verifyReq    types.VerifyRequest // VerifyRequest object
-		useName      string              // user name drives mock service respo
+		useName      string              // user name drives mock service resp
 		badTimestamp bool                // put bad timestamp in request
 		badUUID      bool                // put bad UUID in request
 		badIPAddr    bool                // put bad IP Addr in request

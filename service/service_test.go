@@ -154,7 +154,7 @@ func TestVerify(t *testing.T) {
 
 	for _, v := range []struct {
 		description string                // Test description
-		seed        []types.VerifyRequest // Rows to seed in the datadase
+		seed        []types.VerifyRequest // Rows to seed in the database
 		payload     types.VerifyRequest   // Payload to send
 		expCurr     types.CurrentGeoStat  // Data from current request returned
 		expPrev     *types.GeoEvent       // Previous event returned

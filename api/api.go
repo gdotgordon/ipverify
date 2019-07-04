@@ -1,6 +1,6 @@
 // Package api is the endpoint implementation for the IP verify service.
-// The HTTP endpoint implmentations are here.  This package deals with
-// unmarshaling and marshaling payloads, dispatching to the service (which is
+// The HTTP endpoint implementations are here.  This package deals with
+// unmarshaling and marshaling payloads, dispatching to the service (which
 // itself contains an instance of the store), processing those errors,
 // and implementing proper REST semantics.
 package api
@@ -25,7 +25,7 @@ import (
 const (
 	statusURL = "/v1/status" // ping
 	verifyURL = "/v1/verify" // call to check for suspicious behavior
-	resetURL  = "/v1/reset"  // clears the DB, mostly used for testing.
+	resetURL  = "/v1/reset"  // clears the DB, mostly used for testing
 )
 
 // API is the item that dispatches to the endpoint implementations
@@ -148,7 +148,7 @@ func validateVerifyRequest(request types.VerifyRequest) error {
 	return nil
 }
 
-// For HTTP bad request repsonses, serialize a JSON status message with
+// For HTTP bad request responses, serialize a JSON status message with
 // the cause.
 func (a apiImpl) writeErrorResponse(w http.ResponseWriter, code int, err error) {
 	a.log.Errorw("invoke error", "error", err, "code", code)

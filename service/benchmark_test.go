@@ -11,7 +11,7 @@ import (
 
 // The purpose of this benchmark is to evaluate the usefulness of
 // various optimizations on the main verify() API, such as building
-// an index on the timestamp in the datadase, caching IP lookups, etc.
+// an index on the timestamp in the database, caching IP lookups, etc.
 // It repeatedly invokes the verify endpoint with randomly generated
 // user names.
 
@@ -41,7 +41,7 @@ func BenchmarkIndex(b *testing.B) {
 	rand.Seed(now.Unix())
 
 	for i := 0; i < b.N; i++ {
-		// Randomnize the timestamps over the last 5 hours
+		// Randomize the timestamps over the last 5 hours
 		req := makeReq(users[rand.Int()%20], "128.148.252.151", (now.Unix() - int64(rand.Int()%(3600*5))))
 
 		// Invoke the verify service

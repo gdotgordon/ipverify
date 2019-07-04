@@ -30,13 +30,12 @@ type Location struct {
 }
 
 // Error is used to tag internal server errors to distinguish them from
-// other things, such as user errors.  As per golint, it was renamed
-// from ServiceError due to "stuttering" (service.NewService())
-type Error string
-
+// other things, such as user errors.
 func (e Error) Error() string {
 	return string(e)
 }
+
+type Error string
 
 // Service defines the sets of functions handled by IP verify service
 type Service interface {
@@ -46,9 +45,9 @@ type Service interface {
 
 // VerifyService is the implementation of Service that performs verification
 // that a given login attempt is not suspicious, based on the speed criterion.
-// It does geolcation lookups of IP address use the Maxmind database and checks
+// It does geolcation lookups of IP address using the Maxmind database, and checks
 // the incoming request against previously recoerded events in the database,
-// and determines whether the request is suspicious.
+// determining whether the request is suspicious.
 type VerifyService struct {
 	mmReader *maxminddb.Reader
 	store    Store
@@ -56,6 +55,8 @@ type VerifyService struct {
 }
 
 // New creates a new VerifyService, configured with a datastore and logger.
+// As per golint, this was renamed from NewService() due to "stuttering"
+// (service.NewService())
 func New(mmDBPath string, store Store, log *zap.SugaredLogger) (*VerifyService, error) {
 	mmReader, err := maxminddb.Open(mmDBPath)
 	if err != nil {
@@ -147,7 +148,7 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 		curEvent.UnixTimestamp)
 
 	// As documented in the readme, we use the special value -1 for the 0 time
-	// situation (two events at exactly he same Unix time.)
+	// situation (two events at exactly he same Unix time).
 	var suspicious bool
 	if speed == -1 || speed > types.MaxSpeed {
 		suspicious = true
@@ -164,7 +165,7 @@ func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 	return &ge, nil
 }
 
-// calculate speed uses the two sets of coorinates and corresponding timestamps
+// calculateSpeed uses the two sets of coordinates and corresponding timestamps
 // to calculte a rate that is rounded to the nearest integer (as per the sample
 // in the assignment).
 func calculateSpeed(lat1, lon1 float64, time1 int64, lat2, lon2 float64, time2 int64) int64 {

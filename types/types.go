@@ -28,7 +28,7 @@ type VerifyRequest struct {
 	IPAddress     string `json:"ip_address"`
 }
 
-// CurrentGeoStat is a memeber of the response object that contains
+// CurrentGeoStat is a member of the response object that contains
 // information about the corresponding incoming request.
 type CurrentGeoStat struct {
 	Lat    float64 `json:"lat"`
@@ -50,8 +50,8 @@ type GeoEvent struct {
 }
 
 // VerifyResponse corresponds to the serialized JSON response.  Note both
-// the preceding subsequent access items are pointers, so they may be omitted
-// from the JSON if not p[resent.]
+// the preceding and subsequent access items are pointers, so they may be
+// the JSON if not present.
 type VerifyResponse struct {
 	CurrentGeo         CurrentGeoStat `json:"currentGeo"`
 	PrecedingIPAccess  *GeoEvent      `json:"precedingIpAccess,omitempty"`
