@@ -57,7 +57,7 @@ volumes:
 ```
 This means the sqlite requests.db file will be persisted after the container is shut down, which seems to be the proper behavior.  If you'd prefer to have it start from a fresh db every time, you should remove those two lines.  Note also, you can invoke the /v1/reset endpoint at any time to clear the db.
 
-The maxmindb is in this repository and will be copied to the container on build.
+The maxmindb is contained in this repository and will be copied to the container on build.
 
 ## Tests
 To run the unit tests, you don't need the container running, just run `go test ./...` from the top-level directory.
