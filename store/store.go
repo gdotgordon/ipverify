@@ -1,4 +1,5 @@
-package service
+// Package store implments the database store that is utilizied by the service.
+package store
 
 import (
 	"database/sql"
@@ -42,14 +43,14 @@ type SQLiteStore struct {
 	log     *zap.SugaredLogger
 }
 
-// NewSQLiteStore creates a new store for SQLite3 at the specifed file location.
+// NewSQLiteStore creates a new store for SQLite3 at the specified file location.
 func NewSQLiteStore(filepath string, log *zap.SugaredLogger) (*SQLiteStore, error) {
 	db, err := sql.Open("sqlite3", filepath)
 	if err != nil {
 		return nil, err
 	}
 	if db == nil {
-		return nil, errors.New("Unable to open database")
+		return nil, errors.New("unable to open database")
 	}
 
 	if err := createTable(db, filepath, log); err != nil {
@@ -148,7 +149,7 @@ func (sqs *SQLiteStore) GetPriorNext(username string, uuid string,
 	return prev, next, nil
 }
 
-// Clear deletes all the rows forom the table - useful for testing.
+// Clear deletes all the rows from the table - useful for testing.
 func (sqs *SQLiteStore) Clear() error {
 	_, err := sqs.db.Exec("DELETE FROM items;")
 	return err

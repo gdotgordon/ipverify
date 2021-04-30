@@ -15,6 +15,7 @@ import (
 
 	"github.com/gdotgordon/ipverify/api"
 	"github.com/gdotgordon/ipverify/service"
+	"github.com/gdotgordon/ipverify/store"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
@@ -62,7 +63,7 @@ func main() {
 	muxer := mux.NewRouter()
 
 	// Initialize the store.
-	store, err := service.NewSQLiteStore(dbFilePath, log)
+	store, err := store.NewSQLiteStore(dbFilePath, log)
 	if err != nil {
 		log.Errorw("Error initializing service", "error", err)
 		os.Exit(1)

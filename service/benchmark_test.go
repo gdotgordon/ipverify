@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/gdotgordon/ipverify/store"
 )
 
 // The purpose of this benchmark is to evaluate the usefulness of
@@ -23,7 +25,7 @@ func BenchmarkIndex(b *testing.B) {
 	defer os.Remove(tmpfile.Name())
 
 	log := newNoopLogger()
-	store, err := NewSQLiteStore(tmpfile.Name(), log)
+	store, err := store.NewSQLiteStore(tmpfile.Name(), log)
 	if err != nil {
 		b.Fatalf("error creating db: %v", err)
 	}

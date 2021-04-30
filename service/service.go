@@ -1,6 +1,6 @@
 // Package service implements the functionality of the IP Verify service.  It
 // is shielded from HTTP specifcs and JSON marshaling by the API layer, and
-// it manages the data store, which is also implemented in this package.
+// it manages the data store, which is mplemented in the store package.
 package service
 
 import (
@@ -8,6 +8,7 @@ import (
 	"math"
 	"net"
 
+	"github.com/gdotgordon/ipverify/store"
 	"github.com/gdotgordon/ipverify/types"
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/pkg/errors"
@@ -46,18 +47,16 @@ type Service interface {
 // VerifyService is the implementation of Service that performs verification
 // that a given login attempt is not suspicious, based on the speed criterion.
 // It does geolcation lookups of IP address using the Maxmind database, and checks
-// the incoming request against previously recoerded events in the database,
+// the incoming request against previously recorded events in the database,
 // determining whether the request is suspicious.
 type VerifyService struct {
 	mmReader *maxminddb.Reader
-	store    Store
+	store    store.Store
 	log      *zap.SugaredLogger
 }
 
 // New creates a new VerifyService, configured with a datastore and logger.
-// As per golint, this was renamed from NewService() due to "stuttering"
-// (service.NewService())
-func New(mmDBPath string, store Store, log *zap.SugaredLogger) (*VerifyService, error) {
+func New(mmDBPath string, store store.Store, log *zap.SugaredLogger) (*VerifyService, error) {
 	mmReader, err := maxminddb.Open(mmDBPath)
 	if err != nil {
 		return nil, Error(err.Error())
@@ -70,7 +69,7 @@ func New(mmDBPath string, store Store, log *zap.SugaredLogger) (*VerifyService, 
 func (vs *VerifyService) VerifyIP(req types.VerifyRequest) (*types.VerifyResponse, error) {
 
 	// First add the current record to the store.  This will reduce the vulnerability
-	// of two nearly simutaneous requests missing each other's new event.
+	// of two nearly simultaneous requests missing each other's new event.
 	if err := vs.store.AddRecord(req); err != nil {
 		return nil, errors.Wrap(err, "add record to store")
 	}
@@ -133,7 +132,7 @@ func (vs *VerifyService) Shutdown() {
 }
 
 // geoEventFromRequest prepares either the "previous" and "subsequent" part
-// of the repsonse item, given the data.  This is mostly to refactor common
+// of the response item, given the data.  This is mostly to refactor common
 // code.
 func (vs *VerifyService) geoEventFromRequest(curLoc Location,
 	curEvent, otherEvent *types.VerifyRequest) (*types.GeoEvent, error) {
@@ -183,7 +182,7 @@ func calculateSpeed(lat1, lon1 float64, time1 int64, lat2, lon2 float64, time2 i
 	return int64(math.Round((dist * 3600) / t))
 }
 
-// Source: // https://play.golang.org/p/MZVh5bRWqN - bsaic code similar to these
+// Source: // https://play.golang.org/p/MZVh5bRWqN - basic code similar to these
 // packages, but conversion to miles is more precise:
 // "github.com/paultag/go-haversine"
 // "github.com/umahmood/haversine"
@@ -210,7 +209,7 @@ func lookupIP(ip string, db *maxminddb.Reader, log *zap.SugaredLogger) (Location
 	ipn := net.ParseIP(ip)
 	if ipn == nil {
 		log.Errorw("bad IP address not caught by validation", "IPaddr", ip)
-		return loc.Loc, fmt.Errorf("Invalid IP addr format: %s", ip)
+		return loc.Loc, fmt.Errorf("invalid IP addr format: %s", ip)
 	}
 	err := db.Lookup(ipn, &loc)
 	if err != nil {

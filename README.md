@@ -139,7 +139,10 @@ ions for the Request and Response types for the various REST invocations and a f
 Contains the HTTP handlers for the various endpoints. Primary responsibility is to unmarshal incoming requests, convert them to Go objects, and pass them off to the service layer, get the responses back from the service layer, convert any errors (or not) to appropriate HTTP status codes and send them back to the HTTP layer.
 
 ### *service* package
-The service implements the Service interface, as `SQLiteService`.
+The service package implements the Service interface and does the calculations, as well as interacts with the store.
+
+### *store* package
+The store pacakge implements the Store interface via the NewSQLStore initializer.
 
 ## Architecture, Optimizations and Assumptions
 

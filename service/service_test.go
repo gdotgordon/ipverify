@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gdotgordon/ipverify/store"
 	"github.com/gdotgordon/ipverify/types"
 	"github.com/google/uuid"
 	"github.com/oschwald/maxminddb-golang"
@@ -42,7 +43,7 @@ func TestMaxMind(t *testing.T) {
 		{
 			ipAddr:    "131.91.101",
 			expErr:    true,
-			expErrStr: "Invalid IP addr format: 131.91.101",
+			expErrStr: "invalid IP addr format: 131.91.101",
 		},
 	} {
 		loc, err := lookupIP(v.ipAddr, db, log)
@@ -50,7 +51,7 @@ func TestMaxMind(t *testing.T) {
 			if !v.expErr {
 				t.Errorf("(%d) expected no error, got %v", i, err)
 			} else if err.Error() != v.expErrStr {
-				t.Errorf("(%d) expected error '%t', got '%s'", i, v.expErr, err)
+				t.Errorf("(%d) expected error '%s', got '%s'", i, v.expErrStr, err)
 			}
 		} else if loc.Latitude != v.expLat {
 			t.Errorf("(%d) expected latitude %f, got %f", i, v.expLat, loc.Latitude)
@@ -142,7 +143,7 @@ func TestVerify(t *testing.T) {
 
 	now := time.Now().Unix()
 	l := newNoopLogger()
-	store, err := NewSQLiteStore(":memory:", l)
+	store, err := store.NewSQLiteStore(":memory:", l)
 	if err != nil {
 		t.Errorf("error creating store: %v", err)
 	}
@@ -397,11 +398,13 @@ func ago(d time.Duration, now int64) int64 {
 	return time.Unix(now, 0).Add(-1 * d).Unix()
 }
 
+/*
 func newDebugLogger() *zap.SugaredLogger {
 	config := zap.NewProductionConfig()
 	lg, _ := config.Build()
 	return lg.Sugar()
 }
+*/
 
 func newNoopLogger() *zap.SugaredLogger {
 	config := zap.NewProductionConfig()
