@@ -136,12 +136,12 @@ func (sqs *SQLiteStore) GetPriorNext(username string, uuid string,
 		if err != nil {
 			return nil, nil, err
 		}
-		defer rows.Close()
 
 		for rows.Next() {
 			item := types.VerifyRequest{}
 			err2 := rows.Scan(&item.EventUUID, &item.Username, &item.IPAddress, &item.UnixTimestamp)
 			if err2 != nil {
+				rows.Close()
 				panic(err2)
 			}
 			if item.UnixTimestamp <= timestamp {
@@ -152,8 +152,10 @@ func (sqs *SQLiteStore) GetPriorNext(username string, uuid string,
 		}
 		if err := rows.Err(); err != nil {
 			sqs.log.Errorw("row iterator failed", "error", err)
+			rows.Close()
 			return nil, nil, err
 		}
+		rows.Close()
 	}
 	return prev, next, nil
 }
