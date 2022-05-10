@@ -1,7 +1,9 @@
 # Start with a full-fledged golang image, but strip it from the final image.
-FROM golang:1.12.6-alpine
+FROM golang:1.18.1-alpine
 
 RUN apk add build-base
+
+RUN apk add git
 
 WORKDIR /go/src/github.com/gdotgordon/ipverify
 

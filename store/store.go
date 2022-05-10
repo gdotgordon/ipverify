@@ -101,6 +101,11 @@ func (sqs *SQLiteStore) GetAllRows() ([]types.VerifyRequest, error) {
 		}
 		result = append(result, item)
 	}
+	if err := rows.Err(); err != nil {
+		sqs.log.Errorw("row iterator failed", "error", err)
+		return nil, err
+	}
+
 	return result, nil
 }
 
@@ -145,6 +150,10 @@ func (sqs *SQLiteStore) GetPriorNext(username string, uuid string,
 				next = &item
 			}
 		}
+		if err := rows.Err(); err != nil {
+			sqs.log.Errorw("row iterator failed", "error", err)
+			return nil, nil, err
+		}
 	}
 	return prev, next, nil
 }
@@ -183,6 +192,10 @@ func createTable(db *sql.DB, filepath string, log *zap.SugaredLogger) error {
 		if tname == "items" {
 			exists = true
 		}
+	}
+	if err := rows.Err(); err != nil {
+		log.Errorw("row iterator failed", "error", err)
+		return err
 	}
 	if exists {
 		return nil
